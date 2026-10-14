@@ -1,0 +1,892 @@
+<!doctype html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ORION Dashboard</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#f2f6f4; --bg2:#f8faf9; --surface:#ffffff; --surface2:#eef3f0; --surface3:#dfe8e3;
+  --line:rgba(16,44,34,.08); --line2:rgba(16,44,34,.15);
+  --text:#10241c; --muted:#5a726a; --faint:#8da097;
+  --accent:#0b8f67; --accent-d:#087553; --accent-bg:rgba(11,143,103,.1);
+  --blue:#2f7de1; --amber:#a96b05; --amber-f:#e5a010; --amber-bg:rgba(236,164,25,.17); --red:#d23f3b; --red-bg:rgba(210,63,59,.1); --violet:#7c5cd6;
+  --r:16px; --r-sm:10px;
+  --shadow:0 1px 2px rgba(16,44,34,.05),0 8px 24px rgba(16,44,34,.05);
+  --sans:'Plus Jakarta Sans',system-ui,-apple-system,Segoe UI,Roboto,sans-serif;
+  --mono:'JetBrains Mono',ui-monospace,SFMono-Regular,Menlo,monospace;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%}
+body{font-family:var(--sans);background:radial-gradient(1100px 600px at 85% -10%,rgba(11,143,103,.07),transparent 60%),var(--bg);color:var(--text);font-size:14px;line-height:1.45;-webkit-font-smoothing:antialiased}
+button{font:inherit;color:inherit;border:0;background:none;cursor:pointer}
+input,select{font:inherit;color:inherit}
+svg{display:block}
+.mono{font-family:var(--mono)}
+.app{display:grid;grid-template-columns:248px 1fr;min-height:100vh}
+
+/* sidebar */
+.side{position:sticky;top:0;height:100vh;padding:22px 16px;display:flex;flex-direction:column;gap:26px;border-right:1px solid var(--line);background:#fff}
+.brand{display:flex;gap:12px;align-items:center;padding:0 6px}
+.logo{width:42px;height:42px;border-radius:13px;display:grid;place-items:center;background:linear-gradient(145deg,var(--accent),var(--accent-d));box-shadow:0 6px 18px rgba(11,143,103,.28)}
+.brand h1{font-size:20px;letter-spacing:.12em;font-weight:800}
+.brand p{font-size:10.5px;color:var(--muted);line-height:1.3;margin-top:2px}
+.nav{display:flex;flex-direction:column;gap:4px}
+.nav button{display:flex;align-items:center;gap:12px;padding:11px 12px;border-radius:12px;color:var(--muted);font-weight:600;text-align:left;transition:.15s}
+.nav button:hover{background:var(--surface);color:var(--text)}
+.nav button.on{background:var(--accent-bg);color:var(--accent);box-shadow:inset 0 0 0 1px rgba(11,143,103,.22)}
+.nav svg{width:19px;height:19px}
+.side-foot{margin-top:auto;padding:14px;border-radius:14px;background:var(--surface);border:1px solid var(--line)}
+.conn{display:flex;align-items:center;gap:10px}
+.conn small{display:block;color:var(--muted);font-size:11px}
+.conn b{font-size:13px}
+.dot{width:9px;height:9px;border-radius:50%;background:var(--accent);box-shadow:0 0 0 4px rgba(11,143,103,.15);flex:none}
+.dot.off{background:var(--red);box-shadow:0 0 0 4px rgba(239,91,91,.15)}
+.dot.warn{background:var(--amber);box-shadow:0 0 0 4px rgba(246,185,59,.15)}
+
+/* main */
+.main{padding:22px 28px 40px;min-width:0}
+.top{display:flex;justify-content:space-between;align-items:flex-start;gap:16px;margin-bottom:22px;flex-wrap:wrap}
+.top h2{font-size:24px;font-weight:800;letter-spacing:-.01em}
+.top p{color:var(--muted);margin-top:3px;max-width:56ch}
+.top-r{display:flex;align-items:center;gap:12px}
+.clock{color:var(--muted);font-size:13px;font-variant-numeric:tabular-nums}
+.pill{white-space:nowrap;display:inline-flex;align-items:center;gap:7px;padding:5px 11px;border-radius:99px;font-size:12px;font-weight:700;background:var(--accent-bg);color:var(--accent)}
+.pill.amber{background:var(--amber-bg);color:var(--amber)}
+.pill.red{background:var(--red-bg);color:var(--red)}
+.pill.gray{background:rgba(16,44,34,.07);color:var(--muted)}
+.pill i{width:6px;height:6px;border-radius:50%;background:currentColor}
+.menu-btn{display:none;width:40px;height:40px;border-radius:12px;background:var(--surface);border:1px solid var(--line)}
+
+.view{display:none}.view.on{display:block;animation:fade .25s ease}
+@keyframes fade{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+
+.card{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:18px;box-shadow:var(--shadow)}
+.card-h{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:14px}
+.card-h h3{font-size:14.5px;font-weight:700;display:flex;align-items:center;gap:9px}
+.card-h h3 span{color:var(--muted);font-weight:500;font-size:12.5px}
+.grid-ctrl{display:grid;grid-template-columns:minmax(300px,1fr) minmax(0,1.7fr) minmax(300px,1fr);gap:18px;align-items:start}
+.col{display:flex;flex-direction:column;gap:18px;min-width:0}
+
+/* camera */
+.cam{position:relative;aspect-ratio:16/10;border-radius:13px;overflow:hidden;background:#0a120f;border:1px solid var(--line)}
+.cam .feed{position:absolute;inset:0;background:
+  radial-gradient(120% 70% at 50% 100%,#3a2f1f 0%,#241d14 35%,transparent 65%),
+  linear-gradient(180deg,#46594f 0%,#2c3a34 38%,#1a221d 60%,#2a2216 100%)}
+.cam .feed::after{content:"";position:absolute;inset:0;background:repeating-linear-gradient(0deg,rgba(0,0,0,.14) 0 1px,transparent 1px 3px);mix-blend-mode:multiply}
+.cam img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+.hud{position:absolute;inset:0;pointer-events:none}
+.badge{color:#fff;position:absolute;top:10px;left:10px;display:flex;gap:6px;align-items:center;padding:4px 9px;border-radius:99px;background:rgba(0,0,0,.55);backdrop-filter:blur(6px);font-size:11px;font-weight:700}
+.badge.r{left:auto;right:10px}
+.live-dot{width:7px;height:7px;border-radius:50%;background:var(--red);animation:blink 1.4s infinite}
+@keyframes blink{50%{opacity:.25}}
+.cam-note{position:absolute;left:10px;bottom:10px;font-size:11px;color:rgba(255,255,255,.7);background:rgba(0,0,0,.5);padding:3px 8px;border-radius:8px}
+.cross{position:absolute;left:50%;top:50%;width:54px;height:54px;transform:translate(-50%,-50%);border:1.5px solid rgba(52,211,161,.55);border-radius:50%}
+.cross::before,.cross::after{content:"";position:absolute;background:rgba(52,211,161,.55)}
+.cross::before{left:50%;top:-8px;bottom:-8px;width:1.5px}.cross::after{top:50%;left:-8px;right:-8px;height:1.5px}
+
+
+/* fullscreen kamera */
+.fsbtn{position:absolute;right:10px;bottom:10px;z-index:3;width:32px;height:32px;border-radius:9px;display:grid;place-items:center;color:#fff;background:rgba(0,0,0,.55);backdrop-filter:blur(6px);pointer-events:auto;transition:.15s}
+.fsbtn:hover{background:rgba(0,0,0,.75)}
+.fsbtn svg{width:16px;height:16px}
+.fsinfo{display:none;position:absolute;left:18px;bottom:18px;z-index:3;gap:14px;pointer-events:none}
+.fsinfo div{min-width:150px;padding:14px 18px;border-radius:16px;background:rgba(0,0,0,.6);backdrop-filter:blur(8px);color:#fff}
+.fsinfo small{display:block;font-size:12px;color:rgba(255,255,255,.7);font-weight:600;margin-bottom:2px}
+.fsinfo b{font-size:32px;font-weight:800;font-variant-numeric:tabular-nums;letter-spacing:-.02em}
+.fsinfo b u{text-decoration:none;font-size:15px;font-weight:600;margin-left:3px;color:rgba(255,255,255,.75)}
+.cam:fullscreen,.cam.fs{aspect-ratio:auto;width:100vw;height:100vh;border-radius:0;border:0}
+.cam.fs{position:fixed;inset:0;z-index:200}
+.cam:fullscreen .fsinfo,.cam.fs .fsinfo{display:flex}
+.cam:fullscreen .cam-note,.cam.fs .cam-note{display:none}
+.cam:fullscreen .fsbtn,.cam.fs .fsbtn{right:18px;bottom:18px;width:40px;height:40px}
+.cam:fullscreen .badge,.cam.fs .badge{top:18px}.cam:fullscreen .badge:not(.r),.cam.fs .badge:not(.r){left:18px}.cam:fullscreen .badge.r,.cam.fs .badge.r{right:18px}
+.cam:-webkit-full-screen{aspect-ratio:auto;width:100vw;height:100vh;border-radius:0;border:0}
+.cam:-webkit-full-screen .fsinfo{display:flex}
+.cam:-webkit-full-screen .cam-note{display:none}
+
+/* d-pad */
+.drive{display:flex;gap:18px;align-items:center;margin-top:16px}
+.dpad{display:grid;grid-template-columns:repeat(3,46px);grid-template-rows:repeat(3,46px);gap:6px;padding:10px;border-radius:50%;background:var(--bg);border:1px solid var(--line);flex:none}
+.dpad button{border-radius:12px;background:var(--surface2);display:grid;place-items:center;transition:.12s;border:1px solid var(--line)}
+.dpad button:hover{background:var(--surface3)}
+.dpad button.press,.dpad button:active{background:var(--accent);color:#fff;transform:scale(.94)}
+.dpad button:nth-child(1){grid-area:1/2}.dpad button:nth-child(2){grid-area:2/1}.dpad button:nth-child(3){grid-area:2/2;background:rgba(239,91,91,.9);color:#fff;border-color:transparent;border-radius:50%}
+.dpad button:nth-child(4){grid-area:2/3}.dpad button:nth-child(5){grid-area:3/2}
+.dpad svg{width:20px;height:20px}
+.speed{flex:1}
+.speed .row{display:flex;justify-content:space-between;font-size:12.5px;color:var(--muted);margin-bottom:8px}
+.speed .row b{color:var(--text)}
+input[type=range]{-webkit-appearance:none;appearance:none;width:100%;height:6px;border-radius:9px;background:linear-gradient(90deg,var(--accent) var(--v,60%),var(--surface3) var(--v,60%));outline:none}
+input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:18px;height:18px;border-radius:50%;background:#fff;border:3px solid var(--accent);cursor:pointer}
+input[type=range]::-moz-range-thumb{width:14px;height:14px;border-radius:50%;background:#fff;border:3px solid var(--accent);cursor:pointer}
+.keys{margin-top:10px;font-size:11.5px;color:var(--faint)}
+.manual{flex:1;font-size:12.5px;color:var(--muted)}
+.manual b{color:var(--text);font-size:13.5px;display:block;margin-bottom:4px}
+.manual p{margin-bottom:10px;line-height:1.5}
+.manual .keys{margin:0}
+.startbtn{width:100%;display:flex;align-items:center;justify-content:center;gap:10px;padding:16px;margin-bottom:18px;border-radius:14px;font-size:15.5px;font-weight:800;letter-spacing:.01em;color:#fff;background:linear-gradient(180deg,var(--accent),var(--accent-d));box-shadow:0 10px 24px rgba(11,143,103,.3);transition:.15s}
+.startbtn:hover:not(:disabled){transform:translateY(-1px);filter:brightness(1.06)}
+.startbtn:disabled{background:var(--surface3);color:var(--faint);box-shadow:none;cursor:not-allowed}
+.startbtn.bad:disabled{background:var(--red-bg);color:var(--red)}
+.layer-lbl{display:flex;align-items:center;gap:8px;font-size:11.5px;color:var(--muted);font-weight:600;margin:-6px 0 12px}
+.layer-lbl i{width:7px;height:7px;border-radius:50%;background:var(--accent);animation:blink 1.4s infinite}
+.hcol{display:flex;flex-direction:column;gap:18px;min-width:0}
+[hidden]{display:none!important}
+
+kbd{font-family:var(--mono);font-size:10.5px;padding:1px 6px;border-radius:5px;background:var(--surface2);border:1px solid var(--line2);color:var(--muted)}
+
+.tele{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:16px}
+.tele div{padding:11px 12px;border-radius:12px;background:var(--bg);border:1px solid var(--line)}
+.tele small{display:block;color:var(--muted);font-size:11px;margin-bottom:2px}
+.tele b{font-size:13.5px;font-weight:600}
+.estop{margin-top:14px;width:100%;padding:13px;border-radius:12px;background:linear-gradient(180deg,#ef5b5b,#d44444);color:#fff;font-weight:800;letter-spacing:.06em;display:flex;gap:9px;align-items:center;justify-content:center;box-shadow:0 8px 22px rgba(239,91,91,.22);transition:.15s}
+.estop:hover{filter:brightness(1.08)}
+.estop.reset{background:linear-gradient(180deg,#f0b232,#d99a1e);color:#2a1d00;box-shadow:0 8px 22px rgba(246,185,59,.2)}
+
+/* sensors */
+.sensors{display:grid;gap:12px}
+.sensors.s2{grid-template-columns:repeat(2,1fr)}.sensors.s3{grid-template-columns:repeat(3,1fr)}
+.grp-h{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;font-size:12px;color:var(--muted)}
+.grp-h b{color:var(--text);font-size:12.5px;letter-spacing:.01em}
+.l2info{margin-top:10px;font-size:11.5px;color:var(--faint)}
+.sensor.reading .v{animation:blink 1s infinite}
+.sensor{padding:14px;border-radius:14px;background:var(--bg);border:1px solid var(--line);position:relative;overflow:hidden}
+.sensor .ic{width:34px;height:34px;border-radius:10px;display:grid;place-items:center;margin-bottom:10px}
+.sensor .ic svg{width:18px;height:18px}
+.sensor .lb{color:var(--muted);font-size:12px;font-weight:600}
+.sensor .val{font-size:28px;font-weight:800;letter-spacing:-.02em;font-variant-numeric:tabular-nums;line-height:1.15;margin:2px 0}
+.sensor .val u{text-decoration:none;font-size:12px;color:var(--muted);font-weight:600;margin-left:3px}
+.sensor .tag{white-space:nowrap;font-size:10px}
+.sensor .rg{font-size:11px;color:var(--faint);margin-bottom:10px}
+.meter{height:5px;border-radius:9px;background:var(--surface3);position:relative;margin-bottom:10px}
+.meter .band{position:absolute;top:0;bottom:0;border-radius:9px;background:rgba(52,211,161,.28)}
+.meter .tick{position:absolute;top:-3px;width:3px;height:11px;border-radius:2px;background:#fff;transform:translateX(-50%);transition:left .6s}
+.chart-tabs{display:flex;padding:3px;border-radius:10px;background:var(--bg);border:1px solid var(--line)}
+.chart-tabs button{padding:5px 12px;border-radius:8px;font-size:12px;font-weight:600;color:var(--muted)}
+.chart-tabs button.on{background:var(--accent-bg);color:var(--accent)}
+.charts{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.chart{padding:12px 12px 6px;border-radius:14px;background:var(--bg);border:1px solid var(--line)}
+.chart h4{font-size:12px;color:var(--muted);font-weight:600;display:flex;justify-content:space-between}
+.chart h4 b{color:var(--text);font-variant-numeric:tabular-nums}
+.chart svg{width:100%;height:auto;overflow:visible}
+
+/* workflow */
+.steps{display:flex;flex-direction:column;gap:0;margin:2px 0 14px}
+.step{display:grid;grid-template-columns:28px 1fr;gap:12px;position:relative;padding-bottom:14px}
+.step:last-child{padding-bottom:0}
+.step::before{content:"";position:absolute;left:13px;top:28px;bottom:0;width:2px;background:var(--surface3)}
+.step:last-child::before{display:none}
+.step.done::before{background:var(--accent-d)}
+.sn{width:28px;height:28px;border-radius:50%;display:grid;place-items:center;font-size:12px;font-weight:800;background:var(--surface2);color:var(--muted);border:1px solid var(--line2);z-index:1}
+.step.done .sn{background:var(--accent);color:#fff;border-color:transparent}
+.step.now .sn{background:var(--bg);color:var(--accent);border-color:var(--accent);box-shadow:0 0 0 4px rgba(11,143,103,.14);animation:pulse 1.6s infinite}
+@keyframes pulse{50%{box-shadow:0 0 0 7px rgba(11,143,103,.04)}}
+.step b{font-size:13px;display:block;line-height:1.3;margin-top:3px}
+.step small{color:var(--muted);font-size:11.5px}
+.step:not(.done):not(.now) b{color:var(--muted);font-weight:600}
+.live-box{display:none;margin-bottom:14px;padding:12px;border-radius:12px;background:var(--bg);border:1px solid var(--line)}
+.live-box.on{display:block}
+.lrow{display:grid;grid-template-columns:90px 1fr 62px;gap:10px;align-items:center;font-size:12px;margin:7px 0}
+.lrow span{color:var(--muted)}.lrow em{font-style:normal;text-align:right;font-family:var(--mono);font-size:11.5px}
+.bar{height:7px;border-radius:9px;background:var(--surface3);overflow:hidden}
+.bar i{display:block;height:100%;width:0;border-radius:9px;background:var(--accent);transition:width .15s linear}
+.bar.amber i{background:var(--amber-f)}.bar.blue i{background:var(--blue)}
+
+.sys{display:flex;flex-direction:column}
+.sys li{list-style:none;display:flex;justify-content:space-between;align-items:center;padding:9px 0;border-bottom:1px dashed var(--line);font-size:13px}
+.sys li:last-child{border:0}
+.sys li span{display:flex;gap:9px;align-items:center;color:var(--muted)}
+.ok{color:var(--accent);font-weight:700;font-size:12px}
+.sys-top{display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:12px;margin-bottom:8px;background:var(--accent-bg);color:var(--accent);font-weight:700}
+
+.reco{border-radius:14px;padding:14px;border:1px solid var(--line);background:var(--bg)}
+.reco.s-ok{border-color:rgba(52,211,161,.35);background:linear-gradient(180deg,rgba(52,211,161,.09),var(--bg))}
+.reco.s-warn{border-color:rgba(246,185,59,.35);background:linear-gradient(180deg,rgba(246,185,59,.08),var(--bg))}
+.reco.s-bad{border-color:rgba(239,91,91,.35);background:linear-gradient(180deg,rgba(239,91,91,.08),var(--bg))}
+.reco p{color:var(--muted);font-size:13px;margin:6px 0 12px}
+.reasons{display:flex;flex-direction:column;gap:5px;margin-bottom:12px;font-size:12px}
+.reasons div{display:flex;gap:8px;align-items:center;color:var(--muted)}
+.reasons .b{color:var(--amber)}.reasons .g{color:var(--accent)}.reasons .x{color:var(--red)}
+.btn{width:100%;padding:12px;border-radius:12px;font-weight:700;display:flex;gap:8px;justify-content:center;align-items:center;transition:.15s}
+.btn.primary{background:linear-gradient(180deg,var(--accent),var(--accent-d));color:#fff;box-shadow:0 8px 20px rgba(11,143,103,.25)}
+.btn.primary:hover{filter:brightness(1.07)}
+.btn.ghost{background:var(--surface2);border:1px solid var(--line2);color:var(--text)}
+.btn.ghost:hover{background:var(--surface3)}
+.btn:disabled{opacity:.4;cursor:not-allowed;filter:none}
+.btns{display:flex;flex-direction:column;gap:8px}
+.btns.two{flex-direction:row}
+.tag{display:inline-block;padding:3px 9px;border-radius:7px;font-size:10.5px;font-weight:800;letter-spacing:.04em}
+.tag.ok{background:var(--accent-bg);color:var(--accent)}
+.tag.warn{background:var(--amber-bg);color:var(--amber)}
+.tag.bad{background:var(--red-bg);color:var(--red)}
+.tag.gray{background:rgba(16,44,34,.07);color:var(--muted)}
+
+/* history */
+.grid-hist{display:grid;grid-template-columns:minmax(300px,.8fr) minmax(0,1.6fr);gap:18px;align-items:start}
+.chips{display:flex;gap:6px;flex-wrap:wrap}
+.chip{padding:5px 11px;border-radius:99px;font-size:12px;font-weight:600;background:var(--bg);border:1px solid var(--line);color:var(--muted)}
+.chip.on{background:var(--accent-bg);color:var(--accent);border-color:rgba(52,211,161,.3)}
+.map{position:relative;border-radius:13px;overflow:hidden;border:1px solid var(--line);background:#e6efea}
+.map svg{width:100%;height:auto;cursor:default}
+.legend{display:flex;gap:14px;flex-wrap:wrap;font-size:12px;color:var(--muted);margin-top:12px}
+.legend span{display:flex;gap:7px;align-items:center}
+.legend i{width:10px;height:10px;border-radius:50%}
+.tip{position:absolute;pointer-events:none;padding:9px 11px;border-radius:11px;background:#fff;box-shadow:0 8px 24px rgba(16,44,34,.18);border:1px solid var(--line2);font-size:11.5px;line-height:1.5;min-width:150px;transform:translate(-50%,-115%);display:none}
+.tip b{font-size:12.5px}
+.tblwrap{overflow-x:auto}
+table{width:100%;border-collapse:collapse;font-size:13px;font-variant-numeric:tabular-nums}
+th{font-size:10.5px;text-transform:uppercase;letter-spacing:.03em;color:var(--faint);font-weight:700;text-align:left;padding:8px 7px;border-bottom:1px solid var(--line2);white-space:nowrap}
+td{padding:11px 7px;border-bottom:1px solid var(--line);white-space:nowrap}
+tbody tr{cursor:pointer;transition:.12s}
+tbody tr:hover{background:rgba(16,44,34,.03)}
+tbody tr.sel{background:var(--accent-bg)}
+.eye{width:30px;height:30px;border-radius:9px;display:grid;place-items:center;color:var(--muted);background:var(--bg);border:1px solid var(--line)}
+.pager{display:flex;justify-content:space-between;align-items:center;margin-top:14px;font-size:12px;color:var(--muted)}
+.pager div{display:flex;gap:5px}
+.pager button{min-width:30px;height:30px;border-radius:8px;border:1px solid var(--line);background:var(--bg);color:var(--muted);font-weight:600}
+.pager button.on{border-color:var(--accent);color:var(--accent)}
+.pager button:disabled{opacity:.35;cursor:default}
+.kv{display:flex;flex-direction:column}
+.kv div{display:flex;justify-content:space-between;gap:10px;padding:10px 0;border-bottom:1px dashed var(--line);font-size:13px}
+.kv div:last-child{border:0}
+.kv span{color:var(--muted)}.kv b{font-weight:600;text-align:right}
+.empty{color:var(--muted);text-align:center;padding:30px 0}
+.ibtn{display:inline-flex;gap:7px;align-items:center;padding:7px 12px;border-radius:10px;background:var(--bg);border:1px solid var(--line);color:var(--muted);font-size:12px;font-weight:600}
+.ibtn:hover{color:var(--text);border-color:var(--line2)}
+
+/* settings */
+.grid-set{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:18px}
+.field{display:grid;grid-template-columns:1fr 150px;gap:14px;align-items:center;padding:11px 0;border-bottom:1px dashed var(--line)}
+.field:last-child{border:0}
+.field label{font-size:13px}.field label small{display:block;color:var(--muted);font-size:11.5px;margin-top:1px}
+.field input,.field select{width:100%;padding:8px 10px;border-radius:9px;background:var(--bg);border:1px solid var(--line2);outline:none;font-size:13px}
+.field input:focus,.field select:focus{border-color:var(--accent)}
+.field.wide{grid-template-columns:1fr}
+.range2{display:flex;gap:6px;align-items:center}.range2 span{color:var(--muted)}
+.save-row{display:flex;gap:10px;justify-content:flex-end;margin-top:18px}
+.save-row .btn{width:auto;padding:11px 22px}
+
+.toast{position:fixed;right:22px;bottom:22px;z-index:50;display:flex;flex-direction:column;gap:8px}
+.toast div{padding:12px 16px;border-radius:12px;background:#fff;border:1px solid var(--line2);box-shadow:0 10px 30px rgba(16,44,34,.18);font-size:13px;animation:fade .25s ease;max-width:340px}
+.toast div.ok{border-color:rgba(11,143,103,.45)}.toast div.bad{border-color:rgba(210,63,59,.5)}
+.scrim{display:none}
+
+@media (max-width:1400px){
+  .grid-ctrl{grid-template-columns:minmax(300px,1fr) minmax(0,1.5fr)}
+  .grid-ctrl>.col:nth-child(3){grid-column:1/-1;display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));align-items:start}
+}
+@media (max-width:1000px){
+  .app{grid-template-columns:1fr}
+  .side{position:fixed;z-index:40;left:0;top:0;width:260px;transform:translateX(-100%);transition:.25s}
+  .side.open{transform:none}
+  .scrim.open{display:block;position:fixed;inset:0;background:rgba(16,44,34,.35);z-index:30}
+  .menu-btn{display:grid;place-items:center}
+  .main{padding:16px}
+  .grid-ctrl,.grid-hist,.grid-set{grid-template-columns:1fr}
+  .grid-ctrl>.col:nth-child(3){grid-column:auto;display:flex}
+  .sensors.s3{grid-template-columns:repeat(2,1fr)}
+  .charts{grid-template-columns:1fr}
+}
+@media (max-width:520px){.field{grid-template-columns:1fr}.top h2{font-size:20px}}
+@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+</style>
+</head>
+<body>
+<div class="app">
+  <aside class="side" id="side">
+    <div class="brand">
+      <div class="logo"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21v-8"/><path d="M12 13c0-4 2.5-7 7-7 0 4.5-3 7-7 7z"/><path d="M12 15c0-3-2-5.5-6-5.5 0 3.5 2.5 5.5 6 5.5z"/></svg></div>
+      <div><h1>ORION</h1><p>Organic Restoration Injector<br>and Observation Navigator</p></div>
+    </div>
+    <nav class="nav" id="nav">
+      <button data-v="kontrol" class="on"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="9" rx="2"/><rect x="14" y="3" width="7" height="5" rx="2"/><rect x="14" y="12" width="7" height="9" rx="2"/><rect x="3" y="16" width="7" height="5" rx="2"/></svg>Kontrol &amp; Monitoring</button>
+      <button data-v="riwayat"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21s7-6.2 7-11.5A7 7 0 0 0 5 9.5C5 14.8 12 21 12 21z"/><circle cx="12" cy="9.5" r="2.5"/></svg>Riwayat &amp; Peta</button>
+      <button data-v="setelan"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg>Pengaturan</button>
+    </nav>
+    <div class="side-foot">
+      <div class="conn"><span class="dot" id="espDot"></span><div><b id="espTxt">ESP32 Terhubung</b><small id="espSub">Wi-Fi: ORION_1 · 78%</small></div></div>
+    </div>
+  </aside>
+  <div class="scrim" id="scrim"></div>
+
+  <main class="main">
+    <header class="top">
+      <div style="display:flex;gap:12px;align-items:flex-start">
+        <button class="menu-btn" id="menuBtn" aria-label="Menu"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 7h16M4 12h16M4 17h16"/></svg></button>
+        <div><h2 id="ttl">Kontrol &amp; Monitoring</h2><p id="sub">Pantau kondisi tanah, kendalikan robot, dan pastikan injeksi berjalan sesuai prosedur.</p></div>
+      </div>
+      <div class="top-r"><span class="clock mono" id="clock"></span><span class="pill" id="onl"><i></i>Online</span></div>
+    </header>
+
+    <!-- ============ KONTROL ============ -->
+    <section class="view on" id="v-kontrol">
+      <div class="grid-ctrl">
+        <!-- kiri -->
+        <div class="col">
+          <div class="card">
+            <div class="card-h"><h3>Kontrol Robot</h3><span class="pill" id="robotPill"><i></i>Robot Siap</span></div>
+            <div class="cam">
+              <div class="feed" id="feed"></div><img id="camImg" alt="" hidden>
+              <div class="hud"><div class="cross"></div></div>
+              <div class="badge"><span class="live-dot"></span>LIVE</div>
+              <div class="badge r mono" id="camTs">--:--:--</div>
+              <div class="cam-note" id="camNote">Pratinjau — isi URL stream di Pengaturan</div>
+              <div class="fsinfo"><div><small>Suhu Tanah</small><b><span id="fsT">–</span><u>°C</u></b></div><div><small>Kelembapan</small><b><span id="fsM">–</span><u>%</u></b></div><div><small>Posisi GPS</small><b class="mono" id="fsG" style="font-size:22px;line-height:1.5">–</b></div></div>
+              <button class="fsbtn" id="fsBtn" aria-label="Layar penuh" title="Layar penuh"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/></svg></button>
+            </div>
+            <div class="drive">
+              <div class="dpad" id="dpad">
+                <button data-d="f" aria-label="Maju"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M6 15l6-6 6 6"/></svg></button>
+                <button data-d="l" aria-label="Kiri"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M15 6l-6 6 6 6"/></svg></button>
+                <button data-d="s" aria-label="Berhenti"><svg viewBox="0 0 24 24" fill="currentColor"><rect x="7" y="7" width="10" height="10" rx="2"/></svg></button>
+                <button data-d="r" aria-label="Kanan"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6-6 6"/></svg></button>
+                <button data-d="b" aria-label="Mundur"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg></button>
+              </div>
+              <div class="manual"><b>Kendali manual</b><p>Tahan tombol arah untuk bergerak. Kendali terkunci saat siklus berjalan.</p><div class="keys"><kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd> atau panah · <kbd>Spasi</kbd> stop</div></div>
+              </div>
+            <div class="tele">
+              <div style="grid-column:1/-1"><small>Posisi GPS</small><b class="mono" id="gps">-7.9823, 112.6307</b></div>
+              <div><small>Status Injektor</small><b id="injSt">Siap · Home</b></div>
+              <div><small>Baterai</small><b id="bat">78% <span style="color:var(--muted);font-weight:500">(11.8 V)</span></b></div>
+            </div>
+            <button class="estop" id="estop"><svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M8 2h8l6 6v8l-6 6H8l-6-6V8z"/></svg><span>BERHENTI DARURAT</span></button>
+          </div>
+        </div>
+
+        <!-- tengah -->
+        <div class="col">
+          <div class="card">
+            <div class="card-h"><h3>Data Sensor</h3><span class="pill"><i></i>Real-time</span></div>
+            <div class="grp-h"><b>Layer 1 · Permukaan</b><span>live</span></div>
+            <div class="sensors s2" id="sensorsL1"></div>
+            <div id="l2wrap" hidden>
+              <div class="grp-h" style="margin-top:20px"><b>Layer 2 · Sub-permukaan (RS485)</b><span id="l2note">Membaca…</span></div>
+              <div class="sensors s3" id="sensorsL2"></div>
+              <p class="l2info">N, P, K ditampilkan sebagai informasi; keputusan memakai pH, EC, dan kelembapan sub-surface.</p>
+            </div>
+          </div>
+          <div class="card">
+            <div class="card-h"><h3>Grafik Sensor</h3>
+              <div class="chart-tabs" id="rng"><button class="on" data-r="1">1 Jam</button><button data-r="6">6 Jam</button><button data-r="24">24 Jam</button></div>
+            </div>
+            <div class="charts" id="charts"></div>
+          </div>
+        </div>
+
+        <!-- kanan -->
+        <div class="col">
+          <div class="card">
+            <div class="card-h"><h3>Siklus Kerja ORION</h3><span class="pill gray" id="cycPill">Menunggu</span></div>
+            <button class="startbtn" id="startBtn"><svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M7 4l13 8-13 8z"/></svg><span id="startTxt">Mulai Siklus di Titik Ini</span></button>
+            <div class="steps" id="steps"></div>
+            <div class="live-box" id="liveBox">
+              <div class="lrow"><span>Kedalaman</span><div class="bar"><i id="bDepth"></i></div><em id="tDepth">0.0 cm</em></div>
+              <div class="lrow"><span>Load cell</span><div class="bar amber"><i id="bLoad"></i></div><em id="tLoad">0.0 kg</em></div>
+              <div class="lrow"><span>Bio-Gel</span><div class="bar blue"><i id="bGel"></i></div><em id="tGel">0.0 ml</em></div>
+            </div>
+          </div>
+
+          <div class="card">
+            <div class="card-h"><h3 id="recTitle">Kondisi Titik Saat Ini</h3><span class="tag gray" id="recTag">MEMBACA</span></div>
+            <div class="layer-lbl" id="recLayer"><i></i><span>Layer 1 · Penyaringan awal · real-time</span></div>
+            <div class="reco" id="reco">
+              <p id="recTxt"></p>
+              <div class="reasons" id="reasons"></div>
+              <div class="btns" id="recBtns" hidden>
+                <button class="btn primary" id="okBtn" disabled><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l5 5 9-10"/></svg>Konfirmasi &amp; Mulai Injeksi</button>
+                <button class="btn ghost" id="noBtn" disabled>Batal</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============ RIWAYAT ============ -->
+    <section class="view" id="v-riwayat">
+      <div class="grid-hist">
+        <div class="hcol">
+        <div class="card">
+          <div class="card-h"><h3>Peta Lokasi Pengukuran</h3></div>
+          <div class="map" id="mapWrap"><div id="mapBox"></div><div class="tip" id="tip"></div></div>
+          <div class="legend"><span><i style="background:var(--accent)"></i>Disarankan</span><span><i style="background:var(--amber-f)"></i>Caution</span><span><i style="background:var(--red)"></i>Tidak Disarankan</span><span><i style="background:#fff;border:3px solid var(--blue)"></i>Posisi robot</span></div>
+        </div>
+        <div class="card">
+          <div class="card-h"><h3 id="dtTitle">Detail Titik</h3><span class="tag gray" id="dtTag">—</span></div>
+          <div class="kv" id="detail"></div>
+        </div>
+        </div>
+        <div class="card">
+          <div class="card-h"><h3>Riwayat Tindakan</h3><button class="ibtn" id="csvBtn"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12m0 0l-4-4m4 4l4-4M4 20h16"/></svg>Ekspor CSV</button></div>
+          <div class="chips" id="chips" style="margin-bottom:12px">
+            <button class="chip on" data-f="all">Semua</button><button class="chip" data-f="ok">Disarankan</button><button class="chip" data-f="warn">Caution</button><button class="chip" data-f="bad">Tidak Disarankan</button>
+          </div>
+          <div class="tblwrap"><table><thead><tr><th>No</th><th>Waktu</th><th>pH</th><th>EC</th><th>Suhu</th><th>Lembap</th><th>Status</th><th>Hasil Keputusan</th><th></th></tr></thead><tbody id="tbody"></tbody></table></div>
+          <div class="pager"><span id="pgInfo"></span><div id="pager"></div></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============ SETELAN ============ -->
+    <section class="view" id="v-setelan">
+      <div class="grid-set">
+        <div class="card">
+          <div class="card-h"><h3>Ambang Batas Decision Engine</h3></div>
+          <div class="field"><label>pH normal<small>Rentang aman untuk Bio-Gel</small></label><div class="range2"><input type="number" step="0.1" id="s_ph_min"><span>–</span><input type="number" step="0.1" id="s_ph_max"></div></div>
+          <div class="field"><label>EC normal (µS/cm)</label><div class="range2"><input type="number" id="s_ec_min"><span>–</span><input type="number" id="s_ec_max"></div></div>
+          <div class="field"><label>Suhu tanah normal (°C)</label><div class="range2"><input type="number" id="s_t_min"><span>–</span><input type="number" id="s_t_max"></div></div>
+          <div class="field"><label>Kelembapan normal (%)<small>Dipakai Layer 1 &amp; kelembapan sub-surface</small></label><div class="range2"><input type="number" id="s_m_min"><span>–</span><input type="number" id="s_m_max"></div></div>
+          <div class="field"><label>Nitrogen N (mg/kg)<small>Informasi RS485</small></label><div class="range2"><input type="number" id="s_n_min"><span>–</span><input type="number" id="s_n_max"></div></div>
+          <div class="field"><label>Fosfor P (mg/kg)</label><div class="range2"><input type="number" id="s_p_min"><span>–</span><input type="number" id="s_p_max"></div></div>
+          <div class="field"><label>Kalium K (mg/kg)</label><div class="range2"><input type="number" id="s_k_min"><span>–</span><input type="number" id="s_k_max"></div></div>
+          <div class="field"><label>Suhu bahaya (°C)<small>Penyaringan awal: di atas ini injeksi dibatalkan (indikasi smouldering)</small></label><input type="number" id="s_tdanger"></div>
+        </div>
+        <div class="card">
+          <div class="card-h"><h3>Injeksi &amp; Mekanisme</h3></div>
+          <div class="field"><label>Kedalaman target (cm)</label><input type="number" step="0.5" id="s_depth"></div>
+          <div class="field"><label>Volume Bio-Gel (ml)<small>Pompa peristaltik 12 V</small></label><input type="number" step="0.5" id="s_vol"></div>
+          <div class="field"><label>Batas load cell (kg)<small>Proteksi mekanisme penetrasi</small></label><input type="number" step="0.5" id="s_load"></div>
+          <div class="card-h" style="margin:18px 0 6px"><h3>Koneksi &amp; Simulasi</h3></div>
+          <div class="field"><label>Endpoint server (HTTP POST)<small>PHP + MySQL</small></label><input type="text" id="s_api" placeholder="https://…/api/data.php"></div>
+          <div class="field"><label>URL stream webcam</label><input type="text" id="s_cam" placeholder="http://192.168.x.x:81/stream"></div>
+          
+        </div>
+      </div>
+      <div class="save-row"><button class="btn ghost" id="resetSet">Kembalikan Default</button><button class="btn primary" id="saveSet">Simpan Pengaturan</button></div>
+      <div class="card" style="margin-top:18px"><div class="card-h"><h3>Data Riwayat</h3></div>
+        <p style="color:var(--muted);font-size:13px;margin-bottom:12px">Riwayat pada mode demo disimpan di browser ini. Pada sistem asli, data dikirim ESP32 ke server dan disimpan di MySQL.</p>
+        <button class="ibtn" id="clearHist">Reset riwayat ke data contoh</button></div>
+    </section>
+  </main>
+</div>
+<div class="toast" id="toast"></div>
+
+<script>
+(()=>{
+const $=s=>document.querySelector(s), $$=s=>[...document.querySelectorAll(s)];
+const ls={get(k,d){try{const v=localStorage.getItem(k);return v?JSON.parse(v):d}catch(e){return d}},set(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}}};
+const sleep=ms=>new Promise(r=>setTimeout(r,ms));
+const rnd=(a,b)=>a+Math.random()*(b-a);
+const pad=n=>String(n).padStart(2,'0');
+const BASE={lat:-7.9823,lng:112.6307};
+
+/* ---------- settings ---------- */
+const DEF={ph:[5.0,6.5],ec:[100,300],t:[25,35],m:[15,40],n:[20,60],p:[10,40],k:[80,250],tdanger:40,depth:2,vol:2,load:5,api:'',cam:''};
+let CFG=Object.assign({},DEF,ls.get('orion_cfg2',{}));
+
+/* ---------- medan simulasi: kondisi tanah bergantung posisi robot ----------
+   NE panas (Layer 1 gagal), SW kering (Layer 1 gagal), NW asam (Layer 2 gagal),
+   SE sedikit basa (Layer 2 caution), tengah normal. Pada alat asli: dibaca dari sensor. */
+const gs=(a,b,ca,cb,s)=>Math.exp(-((a-ca)**2+(b-cb)**2)/(2*s*s));
+function field(lat,lng){
+  const a=lat-BASE.lat,b=lng-BASE.lng,s=.00055;
+  const hot=gs(a,b,.0009,.0006,s),dry=gs(a,b,-.0009,-.0010,s),acid=gs(a,b,.0008,-.0009,s),alk=gs(a,b,-.0008,.0009,s);
+  return {t:28.3+hot*16+Math.sin(a*3000)*.4, m:23+Math.sin(b*2500)*2-dry*14-hot*4, ph:5.8-acid*1.5+alk*.85+Math.sin(a*2200)*.1, ec:185-acid*70+alk*45+Math.cos(b*2000)*8,n:42-acid*14+Math.sin(b*2100)*5,p:24-dry*8+Math.cos(a*1900)*3,k:150+alk*40+Math.sin(a*2300)*14};
+}
+
+/* ---------- sensors ---------- */
+const SDEF=[
+ {k:'t',n:'Suhu Tanah',u:'°C',dec:1,c:'#e0920f',rg:()=>CFG.t,axis:[20,48]},
+ {k:'m',n:'Kelembapan',u:'%',dec:0,c:'#7c5cd6',rg:()=>CFG.m,axis:[0,50]},
+ {k:'ph',n:'pH',u:'',dec:1,c:'#0b9f72',rg:()=>CFG.ph,axis:[4,7.5],sub:true},
+ {k:'ec',n:'EC',u:'µS/cm',dec:0,c:'#2f7de1',rg:()=>CFG.ec,axis:[50,300],sub:true},
+ {k:'ms',n:'Kelembapan Sub',u:'%',dec:0,c:'#7c5cd6',rg:()=>CFG.m,axis:[0,50],sub:true},
+ {k:'n',n:'Nitrogen (N)',u:'mg/kg',dec:0,c:'#16a34a',rg:()=>CFG.n,axis:[0,100],sub:true,info:true},
+ {k:'p',n:'Fosfor (P)',u:'mg/kg',dec:0,c:'#d9660b',rg:()=>CFG.p,axis:[0,60],sub:true,info:true},
+ {k:'k',n:'Kalium (K)',u:'mg/kg',dec:0,c:'#c0398f',rg:()=>CFG.k,axis:[0,350],sub:true,info:true}
+];
+const LIVE=SDEF.filter(d=>!d.sub);
+const ICON={
+ ph:'<path d="M12 3s6 6.5 6 11a6 6 0 0 1-12 0c0-4.5 6-11 6-11z"/>',
+ ec:'<path d="M13 2L4 14h7l-1 8 9-12h-7z"/>',
+ t:'<path d="M14 14.8V5a2 2 0 1 0-4 0v9.8a4 4 0 1 0 4 0z"/>',
+ m:'<path d="M12 3s6 6.5 6 11a6 6 0 0 1-12 0c0-4.5 6-11 6-11z"/><path d="M9 15a3 3 0 0 0 3 3"/>',
+ ms:'<path d="M12 3s6 6.5 6 11a6 6 0 0 1-12 0c0-4.5 6-11 6-11z"/><path d="M9 15a3 3 0 0 0 3 3"/>',
+ n:'<text x="12" y="16.5" text-anchor="middle" font-size="13" font-weight="800" fill="currentColor" stroke="none" font-family="sans-serif">N</text>',
+ p:'<text x="12" y="16.5" text-anchor="middle" font-size="13" font-weight="800" fill="currentColor" stroke="none" font-family="sans-serif">P</text>',
+ k:'<text x="12" y="16.5" text-anchor="middle" font-size="13" font-weight="800" fill="currentColor" stroke="none" font-family="sans-serif">K</text>'
+};
+const S={t:28.3,m:23};           // live: Layer 1 (permukaan)
+let meas=null;                    // Layer 2 (sub-permukaan), hanya setelah sensor turun
+const HIST_LEN=96,series={t:[],m:[]};
+function stepSensors(){const f=field(R.lat,R.lng);S.t+=(f.t-S.t)*.5+rnd(-.06,.06);S.m+=(f.m-S.m)*.5+rnd(-.12,.12)}
+function pushSeries(){for(const k in series){series[k].push(S[k]);if(series[k].length>HIST_LEN*4)series[k].shift()}}
+
+function statusOf(def,v){const [a,b]=def.rg(),span=b-a;if(v>=a&&v<=b)return 'ok';if(v>=a-span*.25&&v<=b+span*.25)return 'warn';return 'bad'}
+const LBL={ok:'Normal',warn:'Perhatian',bad:'Di luar batas'};
+function cardHTML(d){return `
+   <div class="sensor" data-k="${d.k}">
+    <div class="ic" style="background:${d.c}1f;color:${d.c}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${ICON[d.k]}</svg></div>
+    <div class="lb">${d.n}</div><div class="val"><span class="v">–</span><u>${d.u}</u></div>
+    <div class="rg"></div><div class="meter"><div class="band"></div><div class="tick"></div></div>
+    <span class="tag"></span></div>`}
+function buildSensors(){
+  $('#sensorsL1').innerHTML=SDEF.filter(d=>!d.sub).map(cardHTML).join('');
+  $('#sensorsL2').innerHTML=SDEF.filter(d=>d.sub).map(cardHTML).join('');
+}
+function renderSensors(){
+  const show=R.reading||!!meas;$('#l2wrap').hidden=!show;
+  $('#l2note').textContent=R.reading?'Sensor turun, membaca…':'Hasil pembacaan titik ini';
+  SDEF.forEach(d=>{
+    const el=$(`.sensor[data-k=${d.k}]`),[a,b]=d.rg(),tg=el.querySelector('.tag'),tick=el.querySelector('.tick');
+    const v=d.sub?(meas?meas[d.k]:null):S[d.k];
+    const [lo,hi]=d.axis,pc=x=>Math.max(0,Math.min(100,(x-lo)/(hi-lo)*100));
+    const band=el.querySelector('.band');band.style.left=pc(a)+'%';band.style.width=(pc(b)-pc(a))+'%';
+    if(v==null){el.classList.add('reading');el.querySelector('.v').textContent='–';el.querySelector('.rg').textContent='Membaca…';tick.style.display='none';tg.className='tag gray';tg.textContent='MEMBACA';return}
+    el.classList.remove('reading');tick.style.display='';
+    const st=statusOf(d,v);
+    el.querySelector('.v').textContent=v.toFixed(d.dec);
+    el.querySelector('.rg').textContent=`Rentang ${a}–${b}`;
+    tick.style.left=pc(v)+'%';
+    if(d.info){tg.className='tag '+(st==='ok'?'ok':'warn');tg.textContent=v<a?'RENDAH':v>b?'TINGGI':'NORMAL'}
+    else{tg.className='tag '+st;tg.textContent=LBL[st].toUpperCase()}
+  });
+}
+
+/* ---------- charts ---------- */
+let range=1;
+const W=250,H=130,PL=28,PR=8,PT=10,PB=20;
+function buildCharts(){
+  $('#charts').innerHTML=LIVE.map(d=>`<div class="chart" data-k="${d.k}"><h4><span>${d.n}${d.u?' ('+d.u+')':''}${d.sub?' · per titik':' · live'}</span><b></b></h4><svg viewBox="0 0 ${W} ${H}"></svg></div>`).join('');
+}
+function renderCharts(){
+  const now=new Date();
+  LIVE.forEach(d=>{
+    const box=$(`.chart[data-k=${d.k}]`),svg=box.querySelector('svg');
+    let pts=[],labs=null;
+    if(d.sub){const hs=HIST.filter(h=>h[d.k]!=null).slice(-10);pts=hs.map(h=>h[d.k]);labs=hs.map(h=>'#'+h.id)}
+    else{const n=Math.min(series[d.k].length,range===1?24:range===6?48:96),stride=range===1?1:range===6?2:4,src=series[d.k];
+      for(let i=0;i<n;i++){const idx=src.length-1-(n-1-i)*stride;if(idx>=0)pts.push(src[idx])}}
+    const [lo,hi]=d.axis,x=i=>PL+i*(W-PL-PR)/Math.max(1,pts.length-1),y=v=>PT+(1-(Math.min(hi,Math.max(lo,v))-lo)/(hi-lo))*(H-PT-PB);
+    const [a,b]=d.rg();let g='';
+    for(let i=0;i<=3;i++){const v=lo+(hi-lo)*i/3,yy=y(v);g+=`<line x1="${PL}" x2="${W-PR}" y1="${yy}" y2="${yy}" stroke="rgba(16,44,34,.08)"/><text x="${PL-6}" y="${yy+3}" text-anchor="end" font-size="9" fill="#8da097">${Math.round(v*10)/10}</text>`}
+    if(labs){const step=Math.max(1,Math.ceil(labs.length/5));labs.forEach((l,i)=>{if(i%step===0||i===labs.length-1)g+=`<text x="${x(i)}" y="${H-5}" text-anchor="middle" font-size="9" fill="#8da097">${l}</text>`})}
+    else{const total=range*60;for(let i=0;i<4;i++){const t=new Date(now-(total*(1-i/3))*60000);g+=`<text x="${PL+i*(W-PL-PR)/3}" y="${H-5}" text-anchor="${i==0?'start':i==3?'end':'middle'}" font-size="9" fill="#8da097">${pad(t.getHours())}:${pad(t.getMinutes())}</text>`}}
+    let body='';
+    if(pts.length){
+      const line=pts.map((v,i)=>(i?'L':'M')+x(i).toFixed(1)+' '+y(v).toFixed(1)).join(' ');
+      const area=line+` L${x(pts.length-1)} ${H-PB} L${x(0)} ${H-PB} Z`,last=pts[pts.length-1];
+      body=`<path d="${area}" fill="url(#g${d.k})"/><path d="${line}" fill="none" stroke="${d.c}" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>`+
+        (d.sub?pts.map((v,i)=>`<circle cx="${x(i)}" cy="${y(v)}" r="2.6" fill="${d.c}"/>`).join(''):'')+
+        `<circle cx="${x(pts.length-1)}" cy="${y(last)}" r="3.8" fill="${d.c}" stroke="#fff" stroke-width="2"/>`;
+      box.querySelector('b').textContent=last.toFixed(d.dec);
+    }else box.querySelector('b').textContent='–';
+    svg.innerHTML=`<defs><linearGradient id="g${d.k}" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="${d.c}" stop-opacity=".22"/><stop offset="1" stop-color="${d.c}" stop-opacity="0"/></linearGradient></defs>
+      <rect x="${PL}" y="${y(b)}" width="${W-PL-PR}" height="${Math.max(0,y(a)-y(b))}" fill="${d.c}" opacity=".09" rx="3"/>${g}${body}`;
+  });
+}
+$('#rng').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;range=+b.dataset.r;$$('#rng button').forEach(x=>x.classList.toggle('on',x===b));renderCharts()});
+
+/* ---------- robot ---------- */
+const STEP=.000045; // kecepatan tetap
+const R={lat:BASE.lat,lng:BASE.lng,bat:78,dir:null,busy:false,estop:false,reading:false};
+function setDir(d){
+  if(R.estop||R.busy){if(R.busy&&d&&d!=='s')toast('Robot sedang menjalankan siklus — kendali manual dikunci.');return}
+  R.dir=(d==='s')?null:d;
+  $$('#dpad button').forEach(b=>b.classList.toggle('press',b.dataset.d===R.dir));
+  updateRobotPill();
+}
+$('#dpad').addEventListener('pointerdown',e=>{const b=e.target.closest('button');if(!b)return;e.preventDefault();setDir(b.dataset.d)});
+['pointerup','pointerleave','pointercancel'].forEach(ev=>$('#dpad').addEventListener(ev,e=>{const b=e.target.closest&&e.target.closest('button');if(b&&b.dataset.d!=='s')setDir('s')}));
+const KEYMAP={w:'f',arrowup:'f',s:'b',arrowdown:'b',a:'l',arrowleft:'l',d:'r',arrowright:'r'};
+addEventListener('keydown',e=>{if(/INPUT|SELECT|TEXTAREA/.test(document.activeElement.tagName))return;const k=e.key.toLowerCase();if(k===' '){e.preventDefault();setDir('s');return}if(KEYMAP[k]&&!e.repeat){if(!$('#v-kontrol').classList.contains('on'))return;e.preventDefault();setDir(KEYMAP[k])}});
+addEventListener('keyup',e=>{if(KEYMAP[e.key.toLowerCase()])setDir('s')});
+
+function moveTick(){
+  if(R.dir&&!R.estop&&!R.busy){
+    if(R.dir==='f')R.lat+=STEP;if(R.dir==='b')R.lat-=STEP;if(R.dir==='l')R.lng-=STEP;if(R.dir==='r')R.lng+=STEP;
+    R.bat=Math.max(5,R.bat-0.004);
+    if(meas){meas=null;renderSensors()}   // pindah titik → hasil Layer 2 lama tidak berlaku
+    stepSensors();renderSensors();renderLive();
+    if($('#v-riwayat').classList.contains('on'))renderMap();
+  }
+  $('#gps').textContent=R.lat.toFixed(4)+', '+R.lng.toFixed(4);
+  $('#bat').innerHTML=Math.round(R.bat)+'% <span style="color:var(--muted);font-weight:500">('+(9.6+R.bat/100*2.8).toFixed(1)+' V)</span>';
+}
+function updateRobotPill(){
+  const p=$('#robotPill');
+  if(R.estop){p.className='pill red';p.innerHTML='<i></i>Darurat';}
+  else if(R.busy){p.className='pill amber';p.innerHTML='<i></i>Menjalankan Siklus';}
+  else if(R.dir){p.className='pill';p.innerHTML='<i></i>Bergerak';}
+  else{p.className='pill';p.innerHTML='<i></i>Robot Siap';}
+}
+
+/* ---------- Layer 1 (real-time) & Layer 2 (decision engine) ---------- */
+const CHK='<path d="M5 12l5 5 9-10"/>',XX='<path d="M6 6l12 12M18 6L6 18"/>',WARN='<path d="M12 8v5M12 17h.01"/>';
+function layer1(v){
+  const r=[];let ok=true;
+  if(v.t>CFG.tdanger){ok=false;r.push({c:'x',t:`Suhu ${v.t.toFixed(1)} °C melebihi batas aman ${CFG.tdanger} °C (indikasi smouldering)`})}
+  else r.push({c:'g',t:`Suhu ${v.t.toFixed(1)} °C aman (≤ ${CFG.tdanger} °C)`});
+  const [a,b]=CFG.m;
+  if(v.m<a||v.m>b){ok=false;r.push({c:'x',t:`Kelembapan ${v.m.toFixed(0)}% ${v.m<a?'terlalu kering':'terlalu basah'} (rentang ${a}–${b}%)`})}
+  else r.push({c:'g',t:`Kelembapan ${v.m.toFixed(0)}% dalam rentang ${a}–${b}%`});
+  return {ok,reasons:r};
+}
+function decide(vals){
+  const reasons=[];let bads=0,warns=0;
+  SDEF.filter(d=>['ph','ec','ms'].includes(d.k)).forEach(d=>{const st=statusOf(d,vals[d.k]),[a,b]=d.rg(),nm=d.k==='ms'?'Kelembapan sub-surface':d.n;
+    if(st==='ok')reasons.push({c:'g',t:`${nm} ${vals[d.k].toFixed(d.dec)}${d.u?' '+d.u:''} dalam rentang`});
+    else{(st==='bad'?bads++:warns++);reasons.push({c:st==='bad'?'x':'b',t:`${nm} ${vals[d.k].toFixed(d.dec)}${d.u?' '+d.u:''} ${vals[d.k]<a?'di bawah':'di atas'} rentang ${a}–${b}`})}});
+  const level=(bads>0||warns>=2)?'bad':warns===1?'warn':'ok';
+  const text={ok:'Kondisi tanah sesuai untuk injeksi Bio-Gel. Pastikan area aman dan lakukan konfirmasi sebelum melanjutkan.',warn:'Satu parameter di luar rentang normal. Injeksi dapat dilanjutkan dengan kehati-hatian setelah operator memeriksa kondisi lapangan.',bad:'Kondisi tanah tidak sesuai. Injeksi tidak disarankan pada titik ini; geser robot ke titik lain.'}[level];
+  return {level,reasons,text};
+}
+const LV={ok:{tag:'DISARANKAN',cls:'ok',txt:'Disarankan'},warn:{tag:'CAUTION',cls:'warn',txt:'Caution'},bad:{tag:'TIDAK DISARANKAN',cls:'bad',txt:'Tidak Disarankan'}};
+
+function paintReco(level,text,reasons,tagTxt){
+  const r=$('#reco');r.className='reco '+(level?{ok:'s-ok',warn:'s-warn',bad:'s-bad'}[level]:'');
+  const t=$('#recTag');t.className='tag '+(level?LV[level].cls:'gray');t.textContent=tagTxt||(level?LV[level].tag:'MENUNGGU');
+  $('#recTxt').textContent=text;
+  $('#reasons').innerHTML=(reasons||[]).map(x=>`<div class="${x.c}"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">${x.c==='g'?CHK:x.c==='b'?WARN:XX}</svg>${x.t}</div>`).join('');
+}
+function setLayer(title,txt){$('#recTitle').textContent=title;$('#recLayer span').textContent=txt}
+let lastLive='';
+function renderLive(){
+  const l1=layer1(S);
+  // tombol mulai
+  const sb=$('#startBtn');
+  if(!R.busy){
+    sb.disabled=R.estop||!l1.ok;sb.classList.toggle('bad',!R.estop&&!l1.ok);
+    $('#startTxt').textContent=R.estop?'Sistem dalam mode darurat':l1.ok?'Mulai Siklus di Titik Ini':'Titik tidak aman — pindahkan robot';
+  }
+  if(R.busy)return;
+  setLayer('Kondisi Titik Saat Ini','Layer 1 · Penyaringan awal · real-time');$('#recBtns').hidden=true;
+  const lvl=l1.ok?'ok':'bad';
+  const text=l1.ok?'Suhu dan kelembapan permukaan aman. Tekan Mulai Siklus untuk menurunkan sensor dan memetakan kondisi sub-permukaan (Layer 2).':'Titik ini tidak aman untuk dilanjutkan. Pindahkan robot ke titik lain; kondisi diperbarui otomatis saat robot bergerak.';
+  const key=lvl+text+l1.reasons.map(x=>x.t).join('|');if(key===lastLive)return;lastLive=key;
+  paintReco(lvl,text,l1.reasons);
+}
+
+/* ---------- siklus ---------- */
+const STEPS=[['Navigasi & Mobilisasi','Arahkan robot ke titik target'],['Penyaringan Awal','Cek suhu & kelembapan permukaan'],['Pemetaan & Keputusan','Baca pH, EC, kelembapan sub-surface'],['Penetrasi & Injeksi','Stepper turun, pompa menyalurkan Bio-Gel'],['Geotagging & Pencatatan','Simpan koordinat dan hasil tindakan']];
+let stepNow=0,stepDone=-1,abort=false,confirmResolve=null;
+function renderSteps(){
+  $('#steps').innerHTML=STEPS.map((s,i)=>`<div class="step ${i<=stepDone?'done':''} ${i===stepNow&&!(i<=stepDone)?'now':''}"><div class="sn">${i<=stepDone?'<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round">'+CHK+'</svg>':i+1}</div><div><b>${s[0]}</b><small>${s[1]}</small></div></div>`).join('');
+}
+function setCycPill(t,c){const p=$('#cycPill');p.className='pill '+(c||'gray');p.textContent=t}
+function resetCycle(){
+  R.busy=false;R.reading=false;stepNow=0;stepDone=-1;renderSteps();renderSensors();$('#liveBox').classList.remove('on');
+  $('#okBtn').disabled=true;$('#noBtn').disabled=true;$('#recBtns').hidden=true;$('#noBtn').textContent='Batal';
+  setCycPill('Menunggu');updateRobotPill();$('#injSt').textContent=R.estop?'Berhenti':'Siap · Home';
+  lastLive='';stepSensors();renderLive();
+}
+const chk=()=>{if(abort||R.estop)throw new Error('abort')};
+function animate(ms,fn){const t0=performance.now();return new Promise((res,rej)=>{const f=now=>{if(abort||R.estop)return rej(new Error('abort'));const p=Math.min(1,(now-t0)/ms);fn(p);p<1?requestAnimationFrame(f):res()};requestAnimationFrame(f)})}
+function waitConfirm(){return new Promise(res=>{confirmResolve=res})}
+
+async function runCycle(){
+  if(R.busy||R.estop)return;
+  if(!layer1(S).ok){toast('Titik tidak aman (Layer 1). Pindahkan robot.','bad');return}
+  abort=false;setDir('s');R.busy=true;updateRobotPill();
+  $('#startBtn').disabled=true;$('#startTxt').textContent='Siklus berjalan…';
+  const pos={lat:R.lat,lng:R.lng};
+  try{
+    stepDone=0;stepNow=1;renderSteps();setCycPill('Penyaringan','amber');
+    setLayer('Penyaringan Awal','Layer 1 · memverifikasi sebelum sensor turun');$('#recBtns').hidden=true;
+    paintReco(null,'Membaca suhu DS18B20 dan kelembapan kapasitif untuk memastikan titik aman…',[],'MEMBACA');
+    $('#injSt').textContent='Penyaringan';await sleep(1600);chk();
+    const l1=layer1(S);
+    if(!l1.ok){
+      paintReco('bad','Titik tidak aman. Siklus dihentikan sebelum sensor diturunkan.',l1.reasons);
+      setCycPill('Titik berbahaya','red');
+      await recordPoint(pos,{t:S.t,m:S.m},'bad',false,'Layer 1: titik tidak aman');toast('Titik dilewati: tidak lolos penyaringan awal.','bad');
+      await sleep(1500);resetCycle();return;
+    }
+    stepDone=1;stepNow=2;renderSteps();setCycPill('Pemetaan','amber');
+    setLayer('Pemetaan & Decision Engine','Layer 2 · sensor sub-permukaan');
+    paintReco(null,'Menurunkan sensor RS485 dan membaca pH, EC, serta kelembapan sub-surface…',[],'MEMETAKAN');
+    $('#injSt').textContent='Sensor turun';R.reading=true;meas=null;renderSensors();await sleep(2200);chk();
+    const f=field(pos.lat,pos.lng);
+    const snap={ph:f.ph+rnd(-.05,.05),ec:f.ec+rnd(-3,3),ms:f.m+3+rnd(-.5,.5),n:f.n+rnd(-1,1),p:f.p+rnd(-.5,.5),k:f.k+rnd(-3,3),t:S.t};
+    meas={ph:snap.ph,ec:snap.ec,ms:snap.ms,n:snap.n,p:snap.p,k:snap.k};R.reading=false;renderSensors();
+    const dec=decide(snap);
+    paintReco(dec.level,dec.text,dec.reasons);setLayer('Rekomendasi Keputusan','Layer 2 · hasil pemetaan sub-permukaan');
+    setCycPill('Menunggu konfirmasi','amber');$('#injSt').textContent='Menunggu';
+    $('#recBtns').hidden=false;$('#okBtn').disabled=dec.level==='bad';
+    $('#noBtn').textContent=dec.level==='bad'?'Lewati Titik':'Batal';$('#noBtn').disabled=false;
+    const go=await waitConfirm();chk();
+    if(!go){
+      const p=await recordPoint(pos,snap,dec.level,false,dec.level==='bad'?'Tidak disarankan':'Dibatalkan operator');
+      toast(`Titik #${p.id} dicatat · Tidak disuntik`);resetCycle();return;
+    }
+    stepDone=2;stepNow=3;renderSteps();setCycPill('Injeksi','amber');
+    $('#okBtn').disabled=true;$('#noBtn').disabled=true;$('#liveBox').classList.add('on');
+    $('#injSt').textContent='Penetrasi';
+    const depth=CFG.depth,lim=CFG.load;
+    await animate(3000,p=>{const d=p*depth;$('#bDepth').style.width=(p*100)+'%';$('#tDepth').textContent=d.toFixed(1)+' cm';
+      const l=Math.min(lim*.92,(.4+p*1.6)+Math.sin(p*18)*.15+(p>.85?(p-.85)*4:0));$('#bLoad').style.width=(l/lim*100)+'%';$('#tLoad').textContent=l.toFixed(1)+' kg'});
+    $('#injSt').textContent='Injeksi';
+    await animate(2400,p=>{$('#bGel').style.width=(p*100)+'%';$('#tGel').textContent=(p*CFG.vol).toFixed(1)+' ml'});
+    $('#injSt').textContent='Retraksi';
+    await animate(1400,p=>{$('#bDepth').style.width=((1-p)*100)+'%';$('#tDepth').textContent=((1-p)*depth).toFixed(1)+' cm';$('#bLoad').style.width=((1-p)*8)+'%';$('#tLoad').textContent=((1-p)*0.6).toFixed(1)+' kg'});
+    stepDone=3;stepNow=4;renderSteps();setCycPill('Mencatat','amber');$('#injSt').textContent='Geotagging';await sleep(1200);chk();
+    const p=await recordPoint(pos,snap,dec.level,true,'Disuntikkan');
+    stepDone=4;stepNow=4;renderSteps();setCycPill('Selesai');
+    toast(`Titik #${p.id} tercatat · Disuntik (${CFG.vol} ml)`,'ok');
+    await sleep(1800);resetCycle();
+  }catch(e){
+    if(e.message!=='abort')console.error(e);
+    resetCycle();
+  }
+}
+$('#startBtn').onclick=runCycle;
+$('#okBtn').onclick=()=>{if(confirmResolve){confirmResolve(true);confirmResolve=null}};
+$('#noBtn').onclick=()=>{if(confirmResolve){confirmResolve(false);confirmResolve=null}else{abort=true}};
+$('#estop').onclick=()=>{
+  const b=$('#estop');
+  if(!R.estop){R.estop=true;abort=true;R.dir=null;$$('#dpad button').forEach(x=>x.classList.remove('press'));
+    if(confirmResolve){confirmResolve(false);confirmResolve=null}
+    b.classList.add('reset');b.querySelector('span').textContent='RESET & AKTIFKAN KEMBALI';
+    updateRobotPill();toast('Berhenti darurat aktif. Semua aktuator dihentikan.','bad');if(!R.busy)resetCycle();else renderLive();
+  }else{R.estop=false;abort=false;b.classList.remove('reset');b.querySelector('span').textContent='BERHENTI DARURAT';
+    updateRobotPill();resetCycle();toast('Sistem siap kembali.','ok');}
+};
+
+/* ---------- history ---------- */
+const SEED=[
+ {t:'07:45',ph:5.4,ec:160,tp:27.8,m:20,lv:'warn',dx:-.0016,dy:-.0004,inj:false},
+ {t:'08:12',ph:5.8,ec:210,tp:28.6,m:24,lv:'ok',dx:-.0010,dy:.0001,inj:true},
+ {t:'08:47',ph:6.1,ec:260,tp:30.2,m:32,lv:'warn',dx:-.0003,dy:.0005,inj:false},
+ {t:'09:10',ph:5.3,ec:180,tp:28.4,m:22,lv:'ok',dx:.0003,dy:.0008,inj:true},
+ {t:'09:32',ph:5.7,ec:180,tp:28.4,m:22,lv:'ok',dx:0,dy:0,inj:true},
+ {t:'10:05',ph:4.8,ec:120,tp:26.9,m:18,lv:'bad',dx:.0009,dy:.0006,inj:false}
+];
+const whyOf=h=>h.inj?'Disuntikkan':(h.why||(h.lv==='bad'?'Tidak disarankan':'Dibatalkan operator'));
+function seedHist(){const d=new Date();const ds=`${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;
+  return SEED.map((s,i)=>({id:i+1,date:ds,time:s.t+':00',ph:s.ph,ec:s.ec,n:36+i*3,p:20+i,k:130+i*9,t:s.tp,m:s.m,lv:s.lv,inj:s.inj,why:s.inj?'Disuntikkan':s.lv==='bad'?'Tidak disarankan':'Dibatalkan operator',lat:BASE.lat+s.dx,lng:BASE.lng+s.dy}))}
+let HIST=ls.get('orion_hist3',null)||seedHist();
+const saveHist=()=>ls.set('orion_hist3',HIST);
+async function recordPoint(pos,vals,lv,inj,why){
+  const d=new Date();
+  const p={id:(HIST.reduce((m,x)=>Math.max(m,x.id),0))+1,date:`${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`,time:`${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`,
+    ph:vals.ph!=null?+vals.ph.toFixed(1):null,ec:vals.ec!=null?Math.round(vals.ec):null,n:vals.n!=null?Math.round(vals.n):null,p:vals.p!=null?Math.round(vals.p):null,k:vals.k!=null?Math.round(vals.k):null,t:+vals.t.toFixed(1),m:Math.round(vals.ms??vals.m),lv,inj,why,lat:pos.lat,lng:pos.lng};
+  HIST.push(p);saveHist();selId=p.id;renderHist();renderMap();
+  if(CFG.api){try{fetch(CFG.api,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(p),mode:'no-cors'}).catch(()=>{})}catch(e){}}
+  return p;
+}
+let filt='all',page=1,selId=null;const PER=8;
+const dash=v=>v==null?'–':v;
+function renderHist(){
+  const rows=HIST.filter(h=>filt==='all'||h.lv===filt).slice().reverse();
+  const pages=Math.max(1,Math.ceil(rows.length/PER));page=Math.min(page,pages);
+  const sl=rows.slice((page-1)*PER,page*PER);
+  $('#tbody').innerHTML=sl.length?sl.map(h=>`<tr data-id="${h.id}" class="${h.id===selId?'sel':''}"><td>${h.id}</td><td>${h.time.slice(0,5)}</td><td>${h.ph!=null?h.ph.toFixed(1):'–'}</td><td>${dash(h.ec)}</td><td>${h.t.toFixed(1)}</td><td>${h.m}%</td><td><span class="tag ${LV[h.lv].cls}">${LV[h.lv].tag}</span></td><td><span class="tag ${h.inj?'ok':'gray'}">${h.inj?'DISUNTIK':'TIDAK DISUNTIK'}</span></td><td><span class="eye"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7S1 12 1 12z"/><circle cx="12" cy="12" r="3"/></svg></span></td></tr>`).join(''):'<tr><td colspan="9" class="empty">Belum ada data.</td></tr>';
+  $('#pgInfo').textContent=`${rows.length} titik`;
+  $('#pager').innerHTML=`<button data-p="${page-1}" ${page<=1?'disabled':''}>‹</button>`+Array.from({length:pages},(_,i)=>`<button data-p="${i+1}" class="${i+1===page?'on':''}">${i+1}</button>`).join('')+`<button data-p="${page+1}" ${page>=pages?'disabled':''}>›</button>`;
+  renderDetail();
+}
+function renderDetail(){
+  const h=HIST.find(x=>x.id===selId);
+  if(!h){$('#dtTitle').textContent='Detail Titik';$('#dtTag').className='tag gray';$('#dtTag').textContent='—';$('#detail').innerHTML='<div class="empty" style="border:0;display:block">Pilih titik pada tabel atau peta untuk melihat detail.</div>';return}
+  $('#dtTitle').textContent='Detail Titik #'+h.id;$('#dtTag').className='tag '+LV[h.lv].cls;$('#dtTag').textContent=LV[h.lv].tag;
+  const ds=new Date(h.date+'T00:00:00').toLocaleDateString('id-ID',{day:'2-digit',month:'short',year:'numeric'});
+  const rows=[['Waktu',`${ds}, ${h.time.slice(0,5)}`],['Koordinat',`<span class="mono" style="font-size:12px">${h.lat.toFixed(4)}, ${h.lng.toFixed(4)}</span>`],['pH',h.ph!=null?h.ph.toFixed(1):'–'],['EC',h.ec!=null?h.ec+' µS/cm':'–'],['N / P / K',h.n!=null?`${h.n} / ${h.p} / ${h.k} mg/kg`:'–'],['Suhu',h.t.toFixed(1)+' °C'],['Kelembapan',h.m+' %'],
+   ['Hasil keputusan',h.inj?'<span class="tag ok">DISUNTIK</span>':'<span class="tag gray">TIDAK DISUNTIK</span>'],['Keterangan',whyOf(h)],['Volume / kedalaman',h.inj?`${CFG.vol} ml / ${CFG.depth} cm`:'–']];
+  $('#detail').innerHTML=rows.map(r=>`<div><span>${r[0]}</span><b>${r[1]}</b></div>`).join('');
+}
+$('#tbody').addEventListener('click',e=>{const tr=e.target.closest('tr[data-id]');if(!tr)return;selId=+tr.dataset.id;renderHist();renderMap()});
+$('#pager').addEventListener('click',e=>{const b=e.target.closest('button');if(!b||b.disabled)return;page=+b.dataset.p;renderHist()});
+$('#chips').addEventListener('click',e=>{const b=e.target.closest('.chip');if(!b)return;filt=b.dataset.f;page=1;$$('.chip').forEach(c=>c.classList.toggle('on',c===b));renderHist();renderMap()});
+$('#csvBtn').onclick=()=>{
+  const head='no,tanggal,waktu,lat,lng,ph,ec_uScm,n_mgkg,p_mgkg,k_mgkg,suhu_C,kelembapan_pct,status,hasil_keputusan,keterangan,injeksi_ml';
+  const body=HIST.map(h=>[h.id,h.date,h.time,h.lat.toFixed(6),h.lng.toFixed(6),h.ph??'',h.ec??'',h.n??'',h.p??'',h.k??'',h.t,h.m,LV[h.lv].txt,h.inj?'Disuntik':'Tidak disuntik',whyOf(h),h.inj?CFG.vol:0].join(',')).join('\n');
+  const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([head+'\n'+body],{type:'text/csv'}));a.download='orion-riwayat.csv';a.click();
+};
+
+/* ---------- map (SVG) ---------- */
+const MW=640,MH=420,SC=190000;
+const proj=(lat,lng)=>[MW/2+(lng-BASE.lng)*SC,MH/2-(lat-BASE.lat)*SC];
+const COL={ok:'#0b9f72',warn:'#e5a010',bad:'#d23f3b'};
+function renderMap(){
+  const pts=HIST.filter(h=>filt==='all'||h.lv===filt);
+  let s=`<svg viewBox="0 0 ${MW} ${MH}" id="mapSvg"><defs>
+   <radialGradient id="terr" cx="40%" cy="45%" r="80%"><stop offset="0" stop-color="#eef5f1"/><stop offset=".65" stop-color="#e3eee8"/><stop offset="1" stop-color="#d6e5dc"/></radialGradient>
+   <pattern id="grid" width="40" height="40" patternUnits="userSpaceOnUse"><path d="M40 0H0V40" fill="none" stroke="rgba(16,44,34,.06)"/></pattern></defs>
+   <rect width="${MW}" height="${MH}" fill="url(#terr)"/><rect width="${MW}" height="${MH}" fill="url(#grid)"/>`;
+  [[120,70],[190,120],[270,175]].forEach(([rx,ry],i)=>{s+=`<ellipse cx="${MW*.42+i*6}" cy="${MH*.48}" rx="${rx*1.4}" ry="${ry*1.15}" fill="none" stroke="rgba(16,44,34,${.09+i*.01})" stroke-dasharray="${i?'2 5':'0'}" transform="rotate(-12 ${MW*.42} ${MH*.48})"/>`});
+  s+=`<path d="M0 330 C120 300 190 360 300 330 S520 300 ${MW} 340" fill="none" stroke="rgba(47,125,225,.18)" stroke-width="9" stroke-linecap="round"/><path d="M0 330 C120 300 190 360 300 330 S520 300 ${MW} 340" fill="none" stroke="rgba(47,125,225,.5)" stroke-width="1.5"/>`;
+  const all=HIST.map(h=>proj(h.lat,h.lng));
+  if(all.length>1)s+=`<path d="${all.map((p,i)=>(i?'L':'M')+p[0].toFixed(1)+' '+p[1].toFixed(1)).join(' ')}" fill="none" stroke="rgba(11,143,103,.55)" stroke-width="1.8" stroke-dasharray="5 5"/>`;
+  pts.forEach(h=>{const [x,y]=proj(h.lat,h.lng),c=COL[h.lv],sel=h.id===selId;
+    s+=`<g class="pt" data-id="${h.id}" style="cursor:pointer" transform="translate(${x.toFixed(1)} ${y.toFixed(1)})">
+      ${sel?`<circle r="19" fill="${c}" opacity=".2"><animate attributeName="r" values="14;22;14" dur="2s" repeatCount="indefinite"/></circle>`:''}
+      <circle r="14" fill="transparent"/>
+      <path d="M0 0C-9-9-11-17-11-21a11 11 0 0 1 22 0c0 4-2 12-11 21z" transform="scale(${sel?1.15:.95})" fill="${c}" stroke="#fff" stroke-width="1.8"/>
+      <circle cy="-21" r="4" fill="#fff" opacity=".95" transform="scale(${sel?1.15:.95})"/></g>`});
+  const [rx,ry]=proj(R.lat,R.lng);
+  s+=`<g transform="translate(${rx.toFixed(1)} ${ry.toFixed(1)})"><circle r="16" fill="#2f7de1" opacity=".18"/><circle r="7" fill="#fff" stroke="#2f7de1" stroke-width="3"/></g>`;
+  s+=`<text x="14" y="${MH-14}" font-size="11" fill="#5a726a" font-family="monospace">±20 m</text><path d="M14 ${MH-34}h60" stroke="#5a726a" stroke-width="2"/></svg>`;
+  $('#mapBox').innerHTML=s;
+}
+const tip=$('#tip'),mw=$('#mapWrap');
+mw.addEventListener('mouseover',e=>{const g=e.target.closest('.pt');if(!g)return;const h=HIST.find(x=>x.id==g.dataset.id);if(!h)return;
+  tip.innerHTML=`<b>Titik #${h.id}</b><br><span style="color:var(--muted)">${h.lat.toFixed(4)}, ${h.lng.toFixed(4)}</span><br>${LV[h.lv].txt} · ${h.inj?'Disuntik':'Tidak disuntik'}<br><span style="color:var(--muted)">${h.time.slice(0,5)}</span>`;
+  const gr=g.getBoundingClientRect(),mr=mw.getBoundingClientRect();tip.style.left=(gr.left+gr.width/2-mr.left)+'px';tip.style.top=(gr.top-mr.top)+'px';tip.style.display='block'});
+mw.addEventListener('mouseout',e=>{if(e.target.closest('.pt'))tip.style.display='none'});
+mw.addEventListener('click',e=>{const g=e.target.closest('.pt');if(!g)return;selId=+g.dataset.id;const i=HIST.filter(h=>filt==='all'||h.lv===filt).slice().reverse().findIndex(h=>h.id===selId);if(i>=0)page=Math.floor(i/PER)+1;renderHist();renderMap()});
+
+/* ---------- settings UI ---------- */
+const F={ph:['s_ph_min','s_ph_max'],ec:['s_ec_min','s_ec_max'],t:['s_t_min','s_t_max'],m:['s_m_min','s_m_max'],n:['s_n_min','s_n_max'],p:['s_p_min','s_p_max'],k:['s_k_min','s_k_max']};
+function loadSettings(){for(const k in F){$('#'+F[k][0]).value=CFG[k][0];$('#'+F[k][1]).value=CFG[k][1]}
+  $('#s_tdanger').value=CFG.tdanger;$('#s_depth').value=CFG.depth;$('#s_vol').value=CFG.vol;$('#s_load').value=CFG.load;$('#s_api').value=CFG.api;$('#s_cam').value=CFG.cam}
+function applyCam(){const i=$('#camImg');if(CFG.cam){i.src=CFG.cam;i.hidden=false;$('#camNote').style.display='none';i.onerror=()=>{i.hidden=true;$('#camNote').style.display='';$('#camNote').textContent='Stream tidak dapat dimuat'}}else{i.hidden=true;i.removeAttribute('src');$('#camNote').style.display='';$('#camNote').textContent='Pratinjau — isi URL stream di Pengaturan'}}
+$('#saveSet').onclick=()=>{
+  const n=id=>parseFloat($('#'+id).value);const c={};
+  for(const k in F){c[k]=[n(F[k][0]),n(F[k][1])];if(c[k].some(isNaN)||c[k][0]>=c[k][1]){toast('Rentang '+k.toUpperCase()+' tidak valid (min harus lebih kecil dari max).','bad');return}}
+  c.tdanger=n('s_tdanger');c.depth=n('s_depth');c.vol=n('s_vol');c.load=n('s_load');
+  if([c.tdanger,c.depth,c.vol,c.load].some(x=>isNaN(x)||x<=0)){toast('Isi semua angka dengan nilai positif.','bad');return}
+  c.api=$('#s_api').value.trim();c.cam=$('#s_cam').value.trim();
+  CFG=Object.assign({},DEF,c);ls.set('orion_cfg2',CFG);applyCam();lastLive='';renderSensors();renderCharts();renderLive();toast('Pengaturan tersimpan.','ok');
+};
+$('#resetSet').onclick=()=>{CFG=Object.assign({},DEF);ls.set('orion_cfg2',CFG);loadSettings();applyCam();lastLive='';renderSensors();renderCharts();renderLive();toast('Pengaturan dikembalikan ke default.')};
+$('#clearHist').onclick=()=>{HIST=seedHist();saveHist();selId=null;renderHist();renderMap();renderCharts();toast('Riwayat dikembalikan ke data contoh.')};
+
+/* ---------- nav / misc ---------- */
+const TITLES={kontrol:['Kontrol & Monitoring','Pantau kondisi tanah, kendalikan robot, dan pastikan injeksi berjalan sesuai prosedur.'],riwayat:['Riwayat & Peta','Lihat riwayat tindakan, sebaran lokasi, dan detail setiap titik pengukuran.'],setelan:['Pengaturan','Atur ambang keputusan, parameter injeksi, dan koneksi perangkat.']};
+function go(v){$$('.view').forEach(x=>x.classList.toggle('on',x.id==='v-'+v));$$('#nav button').forEach(b=>b.classList.toggle('on',b.dataset.v===v));$('#ttl').textContent=TITLES[v][0];$('#sub').textContent=TITLES[v][1];closeMenu();
+  if(v==='riwayat'){renderHist();renderMap()}if(v==='kontrol')renderCharts();ls.set('orion_view',v);}
+$('#nav').addEventListener('click',e=>{const b=e.target.closest('button');if(b)go(b.dataset.v)});
+const openMenu=()=>{$('#side').classList.add('open');$('#scrim').classList.add('open')},closeMenu=()=>{$('#side').classList.remove('open');$('#scrim').classList.remove('open')};
+$('#menuBtn').onclick=openMenu;$('#scrim').onclick=closeMenu;
+function toast(t,c){const d=document.createElement('div');d.textContent=t;if(c)d.className=c;$('#toast').appendChild(d);setTimeout(()=>d.remove(),4200)}
+const BULAN=['Jan','Feb','Mar','Apr','Mei','Jun','Jul','Agu','Sep','Okt','Nov','Des'];
+function clock(){const d=new Date();$('#clock').textContent=`${pad(d.getDate())} ${BULAN[d.getMonth()]} ${d.getFullYear()}  ${pad(d.getHours())}:${pad(d.getMinutes())}`;$('#camTs').textContent=`${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`}
+function wifi(){$('#espSub').textContent='Wi-Fi: ORION_1 · '+Math.round(rnd(74,82))+'%'}
+addEventListener('offline',()=>{$('#onl').className='pill red';$('#onl').innerHTML='<i></i>Offline';$('#espDot').className='dot off';$('#espTxt').textContent='Koneksi terputus'});
+addEventListener('online',()=>{$('#onl').className='pill';$('#onl').innerHTML='<i></i>Online';$('#espDot').className='dot';$('#espTxt').textContent='ESP32 Terhubung'});
+
+
+/* ---------- fullscreen kamera ---------- */
+function updateFs(){$('#fsT').textContent=S.t.toFixed(1);$('#fsM').textContent=S.m.toFixed(0);$('#fsG').textContent=R.lat.toFixed(4)+', '+R.lng.toFixed(4)}
+const camEl=$('.cam');
+const isNativeFs=()=>document.fullscreenElement||document.webkitFullscreenElement;
+function exitFs(){
+  if(isNativeFs()){try{(document.exitFullscreen||document.webkitExitFullscreen).call(document)}catch(e){}}
+  camEl.classList.remove('fs');document.body.style.overflow='';
+}
+function enterFs(){
+  const f=camEl.requestFullscreen||camEl.webkitRequestFullscreen;
+  const fallback=()=>{camEl.classList.add('fs');document.body.style.overflow='hidden'};
+  if(!f){fallback();return}
+  try{const r=f.call(camEl);if(r&&r.catch)r.catch(fallback)}catch(e){fallback()}
+}
+$('#fsBtn').addEventListener('click',e=>{e.stopPropagation();(isNativeFs()||camEl.classList.contains('fs'))?exitFs():enterFs()});
+addEventListener('keydown',e=>{if(e.key==='Escape'&&camEl.classList.contains('fs'))exitFs()});
+setInterval(updateFs,300);
+
+/* ---------- init ---------- */
+const f0=field(R.lat,R.lng);S.t=f0.t;S.m=f0.m;
+for(let i=0;i<HIST_LEN;i++){stepSensors();pushSeries()}
+buildSensors();buildCharts();renderSteps();loadSettings();applyCam();renderSensors();renderCharts();renderLive();
+selId=HIST.length?HIST[HIST.length-1].id:null;renderHist();renderMap();clock();
+setInterval(clock,1000);setInterval(wifi,6000);setInterval(moveTick,200);
+let tick=0;setInterval(()=>{if(R.dir)return; stepSensors();renderSensors();renderLive();if(++tick%6===0){pushSeries();renderCharts()}},500);
+setInterval(()=>{if(R.dir){pushSeries();renderCharts()}},1500);
+const sv=ls.get('orion_view','kontrol');if(sv!=='kontrol')go(sv);
+})();
+</script>
+</body>
+</html>
