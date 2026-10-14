@@ -258,7 +258,7 @@ tbody tr.sel{background:var(--accent-bg)}
 .ibtn:hover{color:var(--text);border-color:var(--line2)}
 
 /* settings */
-.grid-set{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:18px}
+.grid-set{display:grid;grid-template-columns:minmax(0,640px);gap:18px}
 .field{display:grid;grid-template-columns:1fr 150px;gap:14px;align-items:center;padding:11px 0;border-bottom:1px dashed var(--line)}
 .field:last-child{border:0}
 .field label{font-size:13px}.field label small{display:block;color:var(--muted);font-size:11.5px;margin-top:1px}
@@ -434,25 +434,10 @@ tbody tr.sel{background:var(--accent-bg)}
     <section class="view" id="v-setelan">
       <div class="grid-set">
         <div class="card">
-          <div class="card-h"><h3>Ambang Batas Decision Engine</h3></div>
-          <div class="field"><label>pH normal<small>Rentang aman untuk Bio-Gel</small></label><div class="range2"><input type="number" step="0.1" id="s_ph_min"><span>–</span><input type="number" step="0.1" id="s_ph_max"></div></div>
-          <div class="field"><label>EC normal (µS/cm)</label><div class="range2"><input type="number" id="s_ec_min"><span>–</span><input type="number" id="s_ec_max"></div></div>
-          <div class="field"><label>Suhu tanah normal (°C)</label><div class="range2"><input type="number" id="s_t_min"><span>–</span><input type="number" id="s_t_max"></div></div>
-          <div class="field"><label>Kelembapan normal (%)<small>Dipakai Layer 1 &amp; kelembapan sub-surface</small></label><div class="range2"><input type="number" id="s_m_min"><span>–</span><input type="number" id="s_m_max"></div></div>
-          <div class="field"><label>Nitrogen N (mg/kg)<small>Informasi RS485</small></label><div class="range2"><input type="number" id="s_n_min"><span>–</span><input type="number" id="s_n_max"></div></div>
-          <div class="field"><label>Fosfor P (mg/kg)</label><div class="range2"><input type="number" id="s_p_min"><span>–</span><input type="number" id="s_p_max"></div></div>
-          <div class="field"><label>Kalium K (mg/kg)</label><div class="range2"><input type="number" id="s_k_min"><span>–</span><input type="number" id="s_k_max"></div></div>
-          <div class="field"><label>Suhu bahaya (°C)<small>Penyaringan awal: di atas ini injeksi dibatalkan (indikasi smouldering)</small></label><input type="number" id="s_tdanger"></div>
-        </div>
-        <div class="card">
           <div class="card-h"><h3>Injeksi &amp; Mekanisme</h3></div>
           <div class="field"><label>Kedalaman target (cm)</label><input type="number" step="0.5" id="s_depth"></div>
           <div class="field"><label>Volume Bio-Gel (ml)<small>Pompa peristaltik 12 V</small></label><input type="number" step="0.5" id="s_vol"></div>
           <div class="field"><label>Batas load cell (kg)<small>Proteksi mekanisme penetrasi</small></label><input type="number" step="0.5" id="s_load"></div>
-          <div class="card-h" style="margin:18px 0 6px"><h3>Koneksi &amp; Simulasi</h3></div>
-          <div class="field"><label>Endpoint server (HTTP POST)<small>PHP + MySQL</small></label><input type="text" id="s_api" placeholder="https://…/api/data.php"></div>
-          <div class="field"><label>URL stream webcam</label><input type="text" id="s_cam" placeholder="http://192.168.x.x:81/stream"></div>
-          
         </div>
       </div>
       <div class="save-row"><button class="btn ghost" id="resetSet">Kembalikan Default</button><button class="btn primary" id="saveSet">Simpan Pengaturan</button></div>
@@ -829,16 +814,13 @@ mw.addEventListener('mouseout',e=>{if(e.target.closest('.pt'))tip.style.display=
 mw.addEventListener('click',e=>{const g=e.target.closest('.pt');if(!g)return;selId=+g.dataset.id;const i=HIST.filter(h=>filt==='all'||h.lv===filt).slice().reverse().findIndex(h=>h.id===selId);if(i>=0)page=Math.floor(i/PER)+1;renderHist();renderMap()});
 
 /* ---------- settings UI ---------- */
-const F={ph:['s_ph_min','s_ph_max'],ec:['s_ec_min','s_ec_max'],t:['s_t_min','s_t_max'],m:['s_m_min','s_m_max'],n:['s_n_min','s_n_max'],p:['s_p_min','s_p_max'],k:['s_k_min','s_k_max']};
-function loadSettings(){for(const k in F){$('#'+F[k][0]).value=CFG[k][0];$('#'+F[k][1]).value=CFG[k][1]}
-  $('#s_tdanger').value=CFG.tdanger;$('#s_depth').value=CFG.depth;$('#s_vol').value=CFG.vol;$('#s_load').value=CFG.load;$('#s_api').value=CFG.api;$('#s_cam').value=CFG.cam}
+function loadSettings(){
+  $('#s_depth').value=CFG.depth;$('#s_vol').value=CFG.vol;$('#s_load').value=CFG.load}
 function applyCam(){const i=$('#camImg');if(CFG.cam){i.src=CFG.cam;i.hidden=false;$('#camNote').style.display='none';i.onerror=()=>{i.hidden=true;$('#camNote').style.display='';$('#camNote').textContent='Stream tidak dapat dimuat'}}else{i.hidden=true;i.removeAttribute('src');$('#camNote').style.display='';$('#camNote').textContent='Pratinjau — isi URL stream di Pengaturan'}}
 $('#saveSet').onclick=()=>{
   const n=id=>parseFloat($('#'+id).value);const c={};
-  for(const k in F){c[k]=[n(F[k][0]),n(F[k][1])];if(c[k].some(isNaN)||c[k][0]>=c[k][1]){toast('Rentang '+k.toUpperCase()+' tidak valid (min harus lebih kecil dari max).','bad');return}}
-  c.tdanger=n('s_tdanger');c.depth=n('s_depth');c.vol=n('s_vol');c.load=n('s_load');
-  if([c.tdanger,c.depth,c.vol,c.load].some(x=>isNaN(x)||x<=0)){toast('Isi semua angka dengan nilai positif.','bad');return}
-  c.api=$('#s_api').value.trim();c.cam=$('#s_cam').value.trim();
+  c.depth=n('s_depth');c.vol=n('s_vol');c.load=n('s_load');
+  if([c.depth,c.vol,c.load].some(x=>isNaN(x)||x<=0)){toast('Isi semua angka dengan nilai positif.','bad');return}
   CFG=Object.assign({},DEF,c);ls.set('orion_cfg2',CFG);applyCam();lastLive='';renderSensors();renderCharts();renderLive();toast('Pengaturan tersimpan.','ok');
 };
 $('#resetSet').onclick=()=>{CFG=Object.assign({},DEF);ls.set('orion_cfg2',CFG);loadSettings();applyCam();lastLive='';renderSensors();renderCharts();renderLive();toast('Pengaturan dikembalikan ke default.')};
