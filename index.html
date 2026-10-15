@@ -505,7 +505,7 @@ const BASE={lat:-7.9823,lng:112.6307};
    ph/ec/t/m/n/p/k : rentang normal [min,max]   tdanger : suhu bahaya (°C)
    depth : kedalaman injeksi (cm)   vol : volume Bio-Gel (ml)   load : batas load cell (kg)
    api : endpoint server (HTTP POST)   cam : URL stream webcam */
-const DEF={ph:[5.0,6.5],ec:[100,300],t:[25,35],m:[15,40],n:[20,60],p:[10,40],k:[80,250],tdanger:40,depth:2,vol:2,load:5,api:'',cam:''};
+const DEF={ph:[5.0,6.5],ec:[100,300],t:[30,45],m:[15,40],n:[20,60],p:[10,40],k:[80,250],tdanger:50,depth:2,vol:2,load:5,api:'',cam:''};
 const CFG=DEF;
 
 /* ---------- preferensi tampilan (disimpan di browser) ---------- */
@@ -527,12 +527,12 @@ const gs=(a,b,ca,cb,s)=>Math.exp(-((a-ca)**2+(b-cb)**2)/(2*s*s));
 function field(lat,lng){
   const a=lat-BASE.lat,b=lng-BASE.lng,s=.00055;
   const hot=gs(a,b,.0009,.0006,s),dry=gs(a,b,-.0009,-.0010,s),acid=gs(a,b,.0008,-.0009,s),alk=gs(a,b,-.0008,.0009,s);
-  return {t:28.3+hot*16+Math.sin(a*3000)*.4, m:23+Math.sin(b*2500)*2-dry*14-hot*4, ph:5.8-acid*1.5+alk*.85+Math.sin(a*2200)*.1, ec:185-acid*70+alk*45+Math.cos(b*2000)*8,n:42-acid*14+Math.sin(b*2100)*5,p:24-dry*8+Math.cos(a*1900)*3,k:150+alk*40+Math.sin(a*2300)*14};
+  return {t:34+hot*24+Math.sin(a*3000)*.6, m:23+Math.sin(b*2500)*2-dry*14-hot*4, ph:5.8-acid*1.5+alk*.85+Math.sin(a*2200)*.1, ec:185-acid*70+alk*45+Math.cos(b*2000)*8,n:42-acid*14+Math.sin(b*2100)*5,p:24-dry*8+Math.cos(a*1900)*3,k:150+alk*40+Math.sin(a*2300)*14};
 }
 
 /* ---------- sensors ---------- */
 const SDEF=[
- {k:'t',n:'Suhu Tanah',u:'°C',dec:1,c:'#e0920f',rg:()=>CFG.t,axis:[20,48]},
+ {k:'t',n:'Suhu Tanah',u:'°C',dec:1,c:'#e0920f',rg:()=>CFG.t,axis:[20,70]},
  {k:'m',n:'Kelembapan',u:'%',dec:0,c:'#7c5cd6',rg:()=>CFG.m,axis:[0,50]},
  {k:'ph',n:'pH',u:'',dec:1,c:'#0b9f72',rg:()=>CFG.ph,axis:[4,7.5],sub:true},
  {k:'ec',n:'EC',u:'µS/cm',dec:0,c:'#2f7de1',rg:()=>CFG.ec,axis:[50,300],sub:true},
@@ -552,7 +552,7 @@ const ICON={
  p:'<text x="12" y="16.5" text-anchor="middle" font-size="13" font-weight="800" fill="currentColor" stroke="none" font-family="sans-serif">P</text>',
  k:'<text x="12" y="16.5" text-anchor="middle" font-size="13" font-weight="800" fill="currentColor" stroke="none" font-family="sans-serif">K</text>'
 };
-const S={t:28.3,m:23};           // live: Layer 1 (permukaan)
+const S={t:37,m:23};           // live: Layer 1 (permukaan)
 let meas=null;                    // Layer 2 (sub-permukaan), hanya setelah sensor turun
 const HIST_LEN=96,series={t:[],m:[]};
 function stepSensors(){const f=field(R.lat,R.lng);S.t+=(f.t-S.t)*.5+rnd(-.06,.06);S.m+=(f.m-S.m)*.5+rnd(-.12,.12)}
@@ -625,9 +625,10 @@ $('#rng').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)
 
 /* ---------- robot ---------- */
 const STEP=.000045; // kecepatan tetap
-const R={lat:BASE.lat,lng:BASE.lng,bat:78,dir:null,busy:false,estop:false,reading:false,on:true};
+const R={lat:BASE.lat,lng:BASE.lng,bat:78,dir:null,busy:false,estop:false,reading:false,on:true,homing:false};
 function setDir(d){
   if(!R.on){if(d&&d!=='s')toast('Robot mati — nyalakan dulu dengan tombol Power.','bad');return}
+  if(R.homing){if(d&&d!=='s')toast('Robot sedang menuju posisi home.');return}
   if(R.estop||R.busy){if(R.busy&&d&&d!=='s')toast('Robot sedang menjalankan siklus — kendali manual dikunci.');return}
   R.dir=(d==='s')?null:d;
   $$('#dpad button').forEach(b=>b.classList.toggle('press',b.dataset.d===R.dir));
@@ -656,6 +657,7 @@ function updateRobotPill(){
   if(!R.on){p.className='pill gray';p.innerHTML='<i></i>Robot Mati';}
   else if(R.estop){p.className='pill red';p.innerHTML='<i></i>Darurat';}
   else if(R.busy){p.className='pill amber';p.innerHTML='<i></i>Menjalankan Siklus';}
+  else if(R.homing){p.className='pill amber';p.innerHTML='<i></i>Menuju Home';}
   else if(R.dir){p.className='pill';p.innerHTML='<i></i>Bergerak';}
   else{p.className='pill';p.innerHTML='<i></i>Robot Siap';}
 }
@@ -701,8 +703,8 @@ function renderLive(){
     paintReco(null,'Robot dalam keadaan mati. Tekan tombol Power untuk menyalakan.',[],'MATI');return;
   }
   if(!R.busy){
-    sb.disabled=R.estop||!l1.ok;sb.classList.toggle('bad',!R.estop&&!l1.ok);
-    $('#startTxt').textContent=R.estop?'Sistem dalam mode darurat':l1.ok?'Mulai Siklus di Titik Ini':'Titik tidak aman — pindahkan robot';
+    sb.disabled=R.estop||R.homing||!l1.ok;sb.classList.toggle('bad',!R.estop&&!R.homing&&!l1.ok);
+    $('#startTxt').textContent=R.estop?'Sistem dalam mode darurat':R.homing?'Menuju posisi home…':l1.ok?'Mulai Siklus di Titik Ini':'Titik tidak aman — pindahkan robot';
   }
   if(R.busy)return;
   setLayer('Kondisi Titik Saat Ini','Layer 1 · Penyaringan awal · real-time');$('#recBtns').hidden=true;
@@ -713,8 +715,8 @@ function renderLive(){
 }
 
 /* ---------- siklus ---------- */
-const STEPS=[['Navigasi & Mobilisasi','Arahkan robot ke titik target'],['Penyaringan Awal','Cek suhu & kelembapan permukaan'],['Pemetaan & Keputusan','Baca pH, EC, kelembapan sub-surface'],['Penetrasi & Injeksi','Stepper turun, pompa menyalurkan Bio-Gel'],['Geotagging & Pencatatan','Simpan koordinat dan hasil tindakan']];
-let stepNow=0,stepDone=-1,abort=false,confirmResolve=null;
+const STEPS=[['Navigasi & Mobilisasi','Arahkan robot ke titik target'],['Penyaringan Awal','Cek suhu & kelembapan permukaan'],['Pemetaan & Keputusan','Baca pH, EC, kelembapan sub-surface'],['Kirim Data ke Server','Data & status dikirim (HTTP POST JSON)'],['Penetrasi & Injeksi','Stepper turun, pompa menyalurkan Bio-Gel'],['Geotagging & Pencatatan','Simpan koordinat dan hasil tindakan']];
+let stepNow=0,stepDone=-1,abort=false,confirmResolve=null,cycleRecorded=false;
 function renderSteps(){
   $('#steps').innerHTML=STEPS.map((s,i)=>`<div class="step ${i<=stepDone?'done':''} ${i===stepNow&&!(i<=stepDone)?'now':''}"><div class="sn">${i<=stepDone?'<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round">'+CHK+'</svg>':i+1}</div><div><b>${s[0]}</b><small>${s[1]}</small></div></div>`).join('');
 }
@@ -726,15 +728,15 @@ function resetCycle(){
   lastLive='';stepSensors();renderLive();
 }
 const chk=()=>{if(abort||R.estop)throw new Error('abort')};
-function animate(ms,fn){const t0=performance.now();return new Promise((res,rej)=>{const f=now=>{if(abort||R.estop)return rej(new Error('abort'));const p=Math.min(1,(now-t0)/ms);fn(p);p<1?requestAnimationFrame(f):res()};requestAnimationFrame(f)})}
+function animate(ms,fn){const t0=performance.now();return new Promise((res,rej)=>{const f=now=>{if(abort||R.estop)return rej(new Error('abort'));const p=Math.min(1,(now-t0)/ms);const stop=fn(p);if(stop||p>=1)res();else requestAnimationFrame(f)};requestAnimationFrame(f)})}
 function waitConfirm(){return new Promise(res=>{confirmResolve=res})}
 
 async function runCycle(){
-  if(R.busy||R.estop||!R.on)return;
+  if(R.busy||R.estop||!R.on||R.homing)return;
   if(!layer1(S).ok){toast('Titik tidak aman (Layer 1). Pindahkan robot.','bad');return}
   abort=false;setDir('s');R.busy=true;updateRobotPill();
   $('#startBtn').disabled=true;$('#startTxt').textContent='Siklus berjalan…';
-  const pos={lat:R.lat,lng:R.lng};
+  const pos={lat:R.lat,lng:R.lng};let snapG=null,lvG='warn';cycleRecorded=false;
   try{
     stepDone=0;stepNow=1;renderSteps();setCycPill('Penyaringan','amber');
     setLayer('Penyaringan Awal','Layer 1 · memverifikasi sebelum sensor turun');$('#recBtns').hidden=true;
@@ -754,7 +756,9 @@ async function runCycle(){
     const f=field(pos.lat,pos.lng);
     const snap={ph:f.ph+rnd(-.05,.05),ec:f.ec+rnd(-3,3),ms:f.m+3+rnd(-.5,.5),n:f.n+rnd(-1,1),p:f.p+rnd(-.5,.5),k:f.k+rnd(-3,3),t:S.t};
     meas={ph:snap.ph,ec:snap.ec,ms:snap.ms,n:snap.n,p:snap.p,k:snap.k};R.reading=false;renderSensors();
-    const dec=decide(snap);
+    snapG=snap;stepDone=2;stepNow=3;renderSteps();setCycPill('Mengirim','amber');$('#injSt').textContent='Kirim data';
+    paintReco(null,'Mengirim data pengukuran dan status ke server (HTTP POST JSON)…',[],'MENGIRIM');await sleep(1100);chk();
+    const dec=decide(snap);lvG=dec.level;
     paintReco(dec.level,dec.text,dec.reasons);setLayer('Rekomendasi Keputusan','Layer 2 · hasil pemetaan sub-permukaan');
     setCycPill('Menunggu konfirmasi','amber');$('#injSt').textContent='Menunggu';
     $('#recBtns').hidden=false;$('#okBtn').disabled=dec.level==='bad';
@@ -764,29 +768,49 @@ async function runCycle(){
       const p=await recordPoint(pos,snap,dec.level,false,dec.level==='bad'?'Tidak disarankan':'Dibatalkan operator');
       toast(`Titik #${p.id} dicatat · Tidak disuntik`);resetCycle();return;
     }
-    stepDone=2;stepNow=3;renderSteps();setCycPill('Injeksi','amber');
+    stepDone=3;stepNow=4;renderSteps();setCycPill('Injeksi','amber');
     $('#okBtn').disabled=true;$('#noBtn').disabled=true;$('#liveBox').classList.add('on');
     $('#injSt').textContent='Penetrasi';
     const depth=CFG.depth,lim=CFG.load;
-    await animate(3000,p=>{const d=p*depth;$('#bDepth').style.width=(p*100)+'%';$('#tDepth').textContent=d.toFixed(1)+' cm';
-      const l=Math.min(lim*.92,(.4+p*1.6)+Math.sin(p*18)*.15+(p>.85?(p-.85)*4:0));$('#bLoad').style.width=(l/lim*100)+'%';$('#tLoad').textContent=l.toFixed(1)+' kg'});
+    let overload=false,depthNow=0;const hard=Math.random()<.15; // 15%: simulasi tanah keras/obstruksi
+    await animate(3000,p=>{const d=p*depth;depthNow=d;$('#bDepth').style.width=(p*100)+'%';$('#tDepth').textContent=d.toFixed(1)+' cm';
+      let l=Math.min(lim*.92,(.4+p*1.6)+Math.sin(p*18)*.15+(p>.85?(p-.85)*4:0));if(hard&&p>.5)l=lim*(.92+(p-.5)*.3);
+      $('#bLoad').style.width=Math.min(100,l/lim*100)+'%';$('#tLoad').textContent=l.toFixed(1)+' kg';if(l>=lim){overload=true;return true}});
+    if(overload){
+      toast('Gaya tekan melebihi batas aman! Penetrasi dihentikan, jarum ditarik.','bad');
+      setCycPill('Overload','red');$('#injSt').textContent='Retraksi darurat';
+      paintReco('bad','Beban load cell melebihi batas aman. Penetrasi dihentikan dan jarum ditarik ke posisi aman.',[{c:'x',t:`Gaya tekan ≥ ${lim} kg pada kedalaman ${depthNow.toFixed(1)} cm`}],'GAGAL');
+      await animate(1200,q=>{$('#bDepth').style.width=((1-q)*depthNow/depth*100)+'%';$('#tDepth').textContent=((1-q)*depthNow).toFixed(1)+' cm';$('#bLoad').style.width=((1-q)*100)+'%';$('#tLoad').textContent=((1-q)*lim).toFixed(1)+' kg'});
+      stepDone=3;stepNow=5;renderSteps();setCycPill('Mencatat','amber');$('#injSt').textContent='Geotagging';await sleep(800);chk();
+      const pf=await recordPoint(pos,snap,dec.level,false,'Gagal: gaya tekan melebihi batas load cell','fail');
+      toast(`Titik #${pf.id} dicatat · Gagal (overload)`,'bad');
+      await sleep(1800);resetCycle();await doHome();return;
+    }
     $('#injSt').textContent='Injeksi';
     await animate(2400,p=>{$('#bGel').style.width=(p*100)+'%';$('#tGel').textContent=(p*CFG.vol).toFixed(1)+' ml'});
     $('#injSt').textContent='Retraksi';
     await animate(1400,p=>{$('#bDepth').style.width=((1-p)*100)+'%';$('#tDepth').textContent=((1-p)*depth).toFixed(1)+' cm';$('#bLoad').style.width=((1-p)*8)+'%';$('#tLoad').textContent=((1-p)*0.6).toFixed(1)+' kg'});
-    stepDone=3;stepNow=4;renderSteps();setCycPill('Mencatat','amber');$('#injSt').textContent='Geotagging';await sleep(1200);chk();
+    stepDone=4;stepNow=5;renderSteps();setCycPill('Mencatat','amber');$('#injSt').textContent='Geotagging';await sleep(1200);chk();
     const p=await recordPoint(pos,snap,dec.level,true,'Disuntikkan');
-    stepDone=4;stepNow=4;renderSteps();setCycPill('Selesai');
+    stepDone=5;stepNow=5;renderSteps();setCycPill('Selesai');
     toast(`Titik #${p.id} tercatat · Disuntik (${CFG.vol} ml)`,'ok');
-    await sleep(1800);resetCycle();
+    await sleep(1800);resetCycle();await doHome();
   }catch(e){
     if(e.message!=='abort')console.error(e);
+    else if(R.estop&&!cycleRecorded){const pr=await recordPoint(pos,snapG||{t:S.t,m:S.m},lvG,false,'Dibatalkan darurat oleh operator','abort');toast(`Titik #${pr.id} dicatat · Dibatalkan darurat`,'bad')}
     resetCycle();
   }
 }
 $('#startBtn').onclick=runCycle;
 $('#okBtn').onclick=()=>{if(confirmResolve){confirmResolve(true);confirmResolve=null}};
 $('#noBtn').onclick=()=>{if(confirmResolve){confirmResolve(false);confirmResolve=null}else{abort=true}};
+async function doHome(){
+  if(!R.on||R.busy)return;
+  R.homing=true;$('#injSt').textContent='Menuju home';updateRobotPill();lastLive='';renderLive();
+  await sleep(2200);
+  R.homing=false;if(R.on&&!R.busy)$('#injSt').textContent=R.estop?'Berhenti':'Siap · Home';
+  updateRobotPill();lastLive='';renderLive();
+}
 function renderPower(){
   const b=$('#pwr');b.classList.toggle('off',!R.on);
   b.querySelector('span').textContent=R.on?'ROBOT: ON — Matikan':'ROBOT: OFF — Nyalakan';
@@ -797,9 +821,9 @@ function renderPower(){
 }
 $('#pwr').onclick=()=>{
   if(R.on){
-    if(R.busy||R.dir){toast('Gagal mematikan: robot sedang bergerak/menjalankan siklus. Gunakan tombol BATALKAN INJEKSI DARURAT.','bad');return}
+    if(R.busy||R.dir||R.homing){toast('Gagal mematikan: robot sedang bergerak/homing/menjalankan siklus. Gunakan tombol BATALKAN INJEKSI DARURAT.','bad');return}
     R.on=false;toast('Robot dimatikan.');
-  }else{R.on=true;toast('Robot dinyalakan.','ok')}
+  }else{R.on=true;toast('Robot dinyalakan.','ok');setTimeout(doHome,0)}
   renderPower();
 };
 $('#estop').onclick=()=>{
@@ -815,22 +839,24 @@ $('#estop').onclick=()=>{
 
 /* ---------- history ---------- */
 const SEED=[
- {t:'07:45',ph:5.4,ec:160,tp:27.8,m:20,lv:'warn',dx:-.0016,dy:-.0004,inj:false},
- {t:'08:12',ph:5.8,ec:210,tp:28.6,m:24,lv:'ok',dx:-.0010,dy:.0001,inj:true},
- {t:'08:47',ph:6.1,ec:260,tp:30.2,m:32,lv:'warn',dx:-.0003,dy:.0005,inj:false},
- {t:'09:10',ph:5.3,ec:180,tp:28.4,m:22,lv:'ok',dx:.0003,dy:.0008,inj:true},
- {t:'09:32',ph:5.7,ec:180,tp:28.4,m:22,lv:'ok',dx:0,dy:0,inj:true},
- {t:'10:05',ph:4.8,ec:120,tp:26.9,m:18,lv:'bad',dx:.0009,dy:.0006,inj:false}
+ {t:'07:45',ph:5.4,ec:160,tp:36.3,m:20,lv:'warn',dx:-.0016,dy:-.0004,inj:false},
+ {t:'08:12',ph:5.8,ec:210,tp:37.1,m:24,lv:'ok',dx:-.0010,dy:.0001,inj:true},
+ {t:'08:47',ph:6.1,ec:260,tp:38.7,m:32,lv:'warn',dx:-.0003,dy:.0005,inj:false},
+ {t:'09:10',ph:5.3,ec:180,tp:36.9,m:22,lv:'ok',dx:.0003,dy:.0008,inj:true},
+ {t:'09:32',ph:5.7,ec:180,tp:36.9,m:22,lv:'ok',dx:0,dy:0,inj:true},
+ {t:'10:05',ph:4.8,ec:120,tp:35.4,m:18,lv:'bad',dx:.0009,dy:.0006,inj:false}
 ];
 const whyOf=h=>h.inj?'Disuntikkan':(h.why||(h.lv==='bad'?'Tidak disarankan':'Dibatalkan operator'));
+const outOf=h=>h.inj?['ok','DISUNTIK','Disuntik']:h.res==='fail'?['bad','GAGAL','Gagal']:h.res==='abort'?['warn','DIBATALKAN DARURAT','Dibatalkan darurat']:['gray','TIDAK DISUNTIK','Tidak disuntik'];
 function seedHist(){const d=new Date();const ds=`${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;
   return SEED.map((s,i)=>({id:i+1,date:ds,time:s.t+':00',ph:s.ph,ec:s.ec,n:36+i*3,p:20+i,k:130+i*9,t:s.tp,m:s.m,lv:s.lv,inj:s.inj,why:s.inj?'Disuntikkan':s.lv==='bad'?'Tidak disarankan':'Dibatalkan operator',lat:BASE.lat+s.dx,lng:BASE.lng+s.dy}))}
 let HIST=ls.get('orion_hist3',null)||seedHist();
 const saveHist=()=>ls.set('orion_hist3',HIST);
-async function recordPoint(pos,vals,lv,inj,why){
+async function recordPoint(pos,vals,lv,inj,why,res){
+  cycleRecorded=true;
   const d=new Date();
   const p={id:(HIST.reduce((m,x)=>Math.max(m,x.id),0))+1,date:`${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`,time:`${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`,
-    ph:vals.ph!=null?+vals.ph.toFixed(1):null,ec:vals.ec!=null?Math.round(vals.ec):null,n:vals.n!=null?Math.round(vals.n):null,p:vals.p!=null?Math.round(vals.p):null,k:vals.k!=null?Math.round(vals.k):null,t:+vals.t.toFixed(1),m:Math.round(vals.ms??vals.m),lv,inj,why,lat:pos.lat,lng:pos.lng};
+    ph:vals.ph!=null?+vals.ph.toFixed(1):null,ec:vals.ec!=null?Math.round(vals.ec):null,n:vals.n!=null?Math.round(vals.n):null,p:vals.p!=null?Math.round(vals.p):null,k:vals.k!=null?Math.round(vals.k):null,t:+vals.t.toFixed(1),m:Math.round(vals.ms??vals.m),lv,inj,why,res,lat:pos.lat,lng:pos.lng};
   HIST.push(p);saveHist();selId=p.id;renderHist();renderMap();
   if(CFG.api){try{fetch(CFG.api,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(p),mode:'no-cors'}).catch(()=>{})}catch(e){}}
   return p;
@@ -841,7 +867,7 @@ function renderHist(){
   const rows=HIST.filter(h=>filt==='all'||h.lv===filt).slice().reverse();
   const pages=Math.max(1,Math.ceil(rows.length/PER));page=Math.min(page,pages);
   const sl=rows.slice((page-1)*PER,page*PER);
-  $('#tbody').innerHTML=sl.length?sl.map(h=>`<tr data-id="${h.id}" class="${h.id===selId?'sel':''}"><td>${h.id}</td><td>${h.time.slice(0,5)}</td><td>${h.ph!=null?h.ph.toFixed(1):'–'}</td><td>${dash(h.ec)}</td><td>${h.t.toFixed(1)}</td><td>${h.m}%</td><td><span class="tag ${LV[h.lv].cls}">${LV[h.lv].tag}</span></td><td><span class="tag ${h.inj?'ok':'gray'}">${h.inj?'DISUNTIK':'TIDAK DISUNTIK'}</span></td><td><span class="eye"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7S1 12 1 12z"/><circle cx="12" cy="12" r="3"/></svg></span></td></tr>`).join(''):'<tr><td colspan="9" class="empty">Belum ada data.</td></tr>';
+  $('#tbody').innerHTML=sl.length?sl.map(h=>`<tr data-id="${h.id}" class="${h.id===selId?'sel':''}"><td>${h.id}</td><td>${h.time.slice(0,5)}</td><td>${h.ph!=null?h.ph.toFixed(1):'–'}</td><td>${dash(h.ec)}</td><td>${h.t.toFixed(1)}</td><td>${h.m}%</td><td><span class="tag ${LV[h.lv].cls}">${LV[h.lv].tag}</span></td><td><span class="tag ${outOf(h)[0]}">${outOf(h)[1]}</span></td><td><span class="eye"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7S1 12 1 12z"/><circle cx="12" cy="12" r="3"/></svg></span></td></tr>`).join(''):'<tr><td colspan="9" class="empty">Belum ada data.</td></tr>';
   $('#pgInfo').textContent=`${rows.length} titik`;
   $('#pager').innerHTML=`<button data-p="${page-1}" ${page<=1?'disabled':''}>‹</button>`+Array.from({length:pages},(_,i)=>`<button data-p="${i+1}" class="${i+1===page?'on':''}">${i+1}</button>`).join('')+`<button data-p="${page+1}" ${page>=pages?'disabled':''}>›</button>`;
   renderDetail();
@@ -852,7 +878,7 @@ function renderDetail(){
   $('#dtTitle').textContent='Detail Titik #'+h.id;$('#dtTag').className='tag '+LV[h.lv].cls;$('#dtTag').textContent=LV[h.lv].tag;
   const ds=new Date(h.date+'T00:00:00').toLocaleDateString('id-ID',{day:'2-digit',month:'short',year:'numeric'});
   const rows=[['Waktu',`${ds}, ${h.time.slice(0,5)}`],['Koordinat',`<span class="mono" style="font-size:12px">${h.lat.toFixed(4)}, ${h.lng.toFixed(4)}</span>`],['pH',h.ph!=null?h.ph.toFixed(1):'–'],['EC',h.ec!=null?h.ec+' µS/cm':'–'],['N / P / K',h.n!=null?`${h.n} / ${h.p} / ${h.k} mg/kg`:'–'],['Suhu',h.t.toFixed(1)+' °C'],['Kelembapan',h.m+' %'],
-   ['Hasil keputusan',h.inj?'<span class="tag ok">DISUNTIK</span>':'<span class="tag gray">TIDAK DISUNTIK</span>'],['Keterangan',whyOf(h)],['Volume / kedalaman',h.inj?`${CFG.vol} ml / ${CFG.depth} cm`:'–']];
+   ['Hasil keputusan',`<span class="tag ${outOf(h)[0]}">${outOf(h)[1]}</span>`],['Keterangan',whyOf(h)],['Volume / kedalaman',h.inj?`${CFG.vol} ml / ${CFG.depth} cm`:'–']];
   $('#detail').innerHTML=rows.map(r=>`<div><span>${r[0]}</span><b>${r[1]}</b></div>`).join('');
 }
 $('#tbody').addEventListener('click',e=>{const tr=e.target.closest('tr[data-id]');if(!tr)return;selId=+tr.dataset.id;renderHist();renderMap()});
@@ -860,7 +886,7 @@ $('#pager').addEventListener('click',e=>{const b=e.target.closest('button');if(!
 $('#chips').addEventListener('click',e=>{const b=e.target.closest('.chip');if(!b)return;filt=b.dataset.f;page=1;$$('.chip').forEach(c=>c.classList.toggle('on',c===b));renderHist();renderMap()});
 $('#csvBtn').onclick=()=>{
   const head='no,tanggal,waktu,lat,lng,ph,ec_uScm,n_mgkg,p_mgkg,k_mgkg,suhu_C,kelembapan_pct,status,hasil_keputusan,keterangan,injeksi_ml';
-  const body=HIST.map(h=>[h.id,h.date,h.time,h.lat.toFixed(6),h.lng.toFixed(6),h.ph??'',h.ec??'',h.n??'',h.p??'',h.k??'',h.t,h.m,LV[h.lv].txt,h.inj?'Disuntik':'Tidak disuntik',whyOf(h),h.inj?CFG.vol:0].join(',')).join('\n');
+  const body=HIST.map(h=>[h.id,h.date,h.time,h.lat.toFixed(6),h.lng.toFixed(6),h.ph??'',h.ec??'',h.n??'',h.p??'',h.k??'',h.t,h.m,LV[h.lv].txt,outOf(h)[2],whyOf(h),h.inj?CFG.vol:0].join(',')).join('\n');
   const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([head+'\n'+body],{type:'text/csv'}));a.download='orion-riwayat.csv';a.click();
 };
 
@@ -891,7 +917,7 @@ function renderMap(){
 }
 const tip=$('#tip'),mw=$('#mapWrap');
 mw.addEventListener('mouseover',e=>{const g=e.target.closest('.pt');if(!g)return;const h=HIST.find(x=>x.id==g.dataset.id);if(!h)return;
-  tip.innerHTML=`<b>Titik #${h.id}</b><br><span style="color:var(--muted)">${h.lat.toFixed(4)}, ${h.lng.toFixed(4)}</span><br>${LV[h.lv].txt} · ${h.inj?'Disuntik':'Tidak disuntik'}<br><span style="color:var(--muted)">${h.time.slice(0,5)}</span>`;
+  tip.innerHTML=`<b>Titik #${h.id}</b><br><span style="color:var(--muted)">${h.lat.toFixed(4)}, ${h.lng.toFixed(4)}</span><br>${LV[h.lv].txt} · ${outOf(h)[2]}<br><span style="color:var(--muted)">${h.time.slice(0,5)}</span>`;
   const gr=g.getBoundingClientRect(),mr=mw.getBoundingClientRect();tip.style.left=(gr.left+gr.width/2-mr.left)+'px';tip.style.top=(gr.top-mr.top)+'px';tip.style.display='block'});
 mw.addEventListener('mouseout',e=>{if(e.target.closest('.pt'))tip.style.display='none'});
 mw.addEventListener('click',e=>{const g=e.target.closest('.pt');if(!g)return;selId=+g.dataset.id;const i=HIST.filter(h=>filt==='all'||h.lv===filt).slice().reverse().findIndex(h=>h.id===selId);if(i>=0)page=Math.floor(i/PER)+1;renderHist();renderMap()});
@@ -952,6 +978,7 @@ setInterval(clock,1000);setInterval(wifi,6000);setInterval(moveTick,200);
 let tick=0;setInterval(()=>{if(R.dir||!R.on)return; stepSensors();renderSensors();renderLive();if(++tick%6===0){pushSeries();renderCharts()}},500);
 setInterval(()=>{if(R.dir){pushSeries();renderCharts()}},1500);
 const sv=ls.get('orion_view','kontrol');if(sv!=='kontrol')go(sv);
+doHome();
 })();
 </script>
 </body>
