@@ -625,7 +625,7 @@ $('#rng').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)
 
 /* ---------- robot ---------- */
 const STEP=.000045; // kecepatan tetap
-const R={lat:BASE.lat,lng:BASE.lng,bat:78,dir:null,busy:false,estop:false,reading:false,on:true,homing:false};
+const R={lat:BASE.lat,lng:BASE.lng,bat:78,dir:null,busy:false,estop:false,reading:false,on:true,homing:false,inj:false};
 function setDir(d){
   if(!R.on){if(d&&d!=='s')toast('Robot mati — nyalakan dulu dengan tombol Power.','bad');return}
   if(R.homing){if(d&&d!=='s')toast('Robot sedang menuju posisi home.');return}
@@ -652,7 +652,7 @@ function moveTick(){
   $('#bat').innerHTML=Math.round(R.bat)+'% <span style="color:var(--muted);font-weight:500">('+(9.6+R.bat/100*2.8).toFixed(1)+' V)</span>';
 }
 function updateRobotPill(){
-  $('#estop').hidden=!(R.on&&(R.busy||R.estop));   // hanya tampil saat siklus injeksi berjalan (atau menunggu reset)
+  $('#estop').hidden=!(R.on&&(R.inj||R.estop));   // hanya tampil saat siklus injeksi berjalan (atau menunggu reset)
   const p=$('#robotPill');
   if(!R.on){p.className='pill gray';p.innerHTML='<i></i>Robot Mati';}
   else if(R.estop){p.className='pill red';p.innerHTML='<i></i>Darurat';}
@@ -665,13 +665,15 @@ function updateRobotPill(){
 /* ---------- Layer 1 (real-time) & Layer 2 (decision engine) ---------- */
 const CHK='<path d="M5 12l5 5 9-10"/>',XX='<path d="M6 6l12 12M18 6L6 18"/>',WARN='<path d="M12 8v5M12 17h.01"/>';
 function layer1(v){
-  const r=[];let ok=true;
+  const r=[];let ok=true,warn=false;
   if(v.t>CFG.tdanger){ok=false;r.push({c:'x',t:`Suhu ${v.t.toFixed(1)} °C melebihi batas aman ${CFG.tdanger} °C (indikasi smouldering)`})}
-  else r.push({c:'g',t:`Suhu ${v.t.toFixed(1)} °C aman (≤ ${CFG.tdanger} °C)`});
-  const [a,b]=CFG.m;
-  if(v.m<a||v.m>b){ok=false;r.push({c:'x',t:`Kelembapan ${v.m.toFixed(0)}% ${v.m<a?'terlalu kering':'terlalu basah'} (rentang ${a}–${b}%)`})}
+  else if(v.t>CFG.t[1]){warn=true;r.push({c:'b',t:`Suhu ${v.t.toFixed(1)} °C di atas rentang normal ${CFG.t[0]}–${CFG.t[1]} °C (waspada, masih di bawah ${CFG.tdanger} °C)`})}
+  else r.push({c:'g',t:`Suhu ${v.t.toFixed(1)} °C normal (${CFG.t[0]}–${CFG.t[1]} °C)`});
+  const [a,b]=CFG.m,sp=(b-a)*.25;
+  if(v.m<a-sp||v.m>b+sp){ok=false;r.push({c:'x',t:`Kelembapan ${v.m.toFixed(0)}% ${v.m<a?'terlalu kering':'terlalu basah'} (rentang ${a}–${b}%)`})}
+  else if(v.m<a||v.m>b){warn=true;r.push({c:'b',t:`Kelembapan ${v.m.toFixed(0)}% sedikit di luar rentang ${a}–${b}% (waspada)`})}
   else r.push({c:'g',t:`Kelembapan ${v.m.toFixed(0)}% dalam rentang ${a}–${b}%`});
-  return {ok,reasons:r};
+  return {ok,warn,reasons:r};
 }
 function decide(vals){
   const reasons=[];let bads=0,warns=0;
@@ -708,8 +710,8 @@ function renderLive(){
   }
   if(R.busy)return;
   setLayer('Kondisi Titik Saat Ini','Layer 1 · Penyaringan awal · real-time');$('#recBtns').hidden=true;
-  const lvl=l1.ok?'ok':'bad';
-  const text=l1.ok?'Suhu dan kelembapan permukaan aman. Tekan Mulai Siklus untuk menurunkan sensor dan memetakan kondisi sub-permukaan (Layer 2).':'Titik ini tidak aman untuk dilanjutkan. Pindahkan robot ke titik lain; kondisi diperbarui otomatis saat robot bergerak.';
+  const lvl=!l1.ok?'bad':l1.warn?'warn':'ok';
+  const text=l1.ok&&l1.warn?'CAUTION — kondisi permukaan perlu perhatian khusus. Siklus tetap dapat dilanjutkan; periksa kondisi lapangan terlebih dahulu.':l1.ok?'Suhu dan kelembapan permukaan aman. Tekan Mulai Siklus untuk menurunkan sensor dan memetakan kondisi sub-permukaan (Layer 2).':'Titik ini tidak aman untuk dilanjutkan. Pindahkan robot ke titik lain; kondisi diperbarui otomatis saat robot bergerak.';
   const key=lvl+text+l1.reasons.map(x=>x.t).join('|');if(key===lastLive)return;lastLive=key;
   paintReco(lvl,text,l1.reasons);
 }
@@ -722,7 +724,7 @@ function renderSteps(){
 }
 function setCycPill(t,c){const p=$('#cycPill');p.className='pill '+(c||'gray');p.textContent=t}
 function resetCycle(){
-  R.busy=false;R.reading=false;stepNow=0;stepDone=-1;renderSteps();renderSensors();$('#liveBox').classList.remove('on');
+  R.busy=false;R.inj=false;R.reading=false;stepNow=0;stepDone=-1;renderSteps();renderSensors();$('#liveBox').classList.remove('on');
   $('#okBtn').disabled=true;$('#noBtn').disabled=true;$('#recBtns').hidden=true;$('#noBtn').textContent='Batal';
   setCycPill('Menunggu');updateRobotPill();$('#injSt').textContent=R.estop?'Berhenti':'Siap · Home';
   lastLive='';stepSensors();renderLive();
@@ -768,7 +770,7 @@ async function runCycle(){
       const p=await recordPoint(pos,snap,dec.level,false,dec.level==='bad'?'Tidak disarankan':'Dibatalkan operator');
       toast(`Titik #${p.id} dicatat · Tidak disuntik`);resetCycle();return;
     }
-    stepDone=3;stepNow=4;renderSteps();setCycPill('Injeksi','amber');
+    stepDone=3;stepNow=4;renderSteps();setCycPill('Injeksi','amber');R.inj=true;updateRobotPill();
     $('#okBtn').disabled=true;$('#noBtn').disabled=true;$('#liveBox').classList.add('on');
     $('#injSt').textContent='Penetrasi';
     const depth=CFG.depth,lim=CFG.load;
@@ -776,7 +778,7 @@ async function runCycle(){
     await animate(3000,p=>{const d=p*depth;depthNow=d;$('#bDepth').style.width=(p*100)+'%';$('#tDepth').textContent=d.toFixed(1)+' cm';
       let l=Math.min(lim*.92,(.4+p*1.6)+Math.sin(p*18)*.15+(p>.85?(p-.85)*4:0));if(hard&&p>.5)l=lim*(.92+(p-.5)*.3);
       $('#bLoad').style.width=Math.min(100,l/lim*100)+'%';$('#tLoad').textContent=l.toFixed(1)+' kg';if(l>=lim){overload=true;return true}});
-    if(overload){
+    if(overload){R.inj=false;updateRobotPill();
       toast('Gaya tekan melebihi batas aman! Penetrasi dihentikan, jarum ditarik.','bad');
       setCycPill('Overload','red');$('#injSt').textContent='Retraksi darurat';
       paintReco('bad','Beban load cell melebihi batas aman. Penetrasi dihentikan dan jarum ditarik ke posisi aman.',[{c:'x',t:`Gaya tekan ≥ ${lim} kg pada kedalaman ${depthNow.toFixed(1)} cm`}],'GAGAL');
@@ -784,17 +786,17 @@ async function runCycle(){
       stepDone=3;stepNow=5;renderSteps();setCycPill('Mencatat','amber');$('#injSt').textContent='Geotagging';await sleep(800);chk();
       const pf=await recordPoint(pos,snap,dec.level,false,'Gagal: gaya tekan melebihi batas load cell','fail');
       toast(`Titik #${pf.id} dicatat · Gagal (overload)`,'bad');
-      await sleep(1800);resetCycle();await doHome();return;
+      await sleep(1800);resetCycle();return;
     }
     $('#injSt').textContent='Injeksi';
     await animate(2400,p=>{$('#bGel').style.width=(p*100)+'%';$('#tGel').textContent=(p*CFG.vol).toFixed(1)+' ml'});
     $('#injSt').textContent='Retraksi';
     await animate(1400,p=>{$('#bDepth').style.width=((1-p)*100)+'%';$('#tDepth').textContent=((1-p)*depth).toFixed(1)+' cm';$('#bLoad').style.width=((1-p)*8)+'%';$('#tLoad').textContent=((1-p)*0.6).toFixed(1)+' kg'});
-    stepDone=4;stepNow=5;renderSteps();setCycPill('Mencatat','amber');$('#injSt').textContent='Geotagging';await sleep(1200);chk();
+    R.inj=false;updateRobotPill();stepDone=4;stepNow=5;renderSteps();setCycPill('Mencatat','amber');$('#injSt').textContent='Geotagging';await sleep(1200);chk();
     const p=await recordPoint(pos,snap,dec.level,true,'Disuntikkan');
     stepDone=5;stepNow=5;renderSteps();setCycPill('Selesai');
     toast(`Titik #${p.id} tercatat · Disuntik (${CFG.vol} ml)`,'ok');
-    await sleep(1800);resetCycle();await doHome();
+    await sleep(1800);resetCycle();
   }catch(e){
     if(e.message!=='abort')console.error(e);
     else if(R.estop&&!cycleRecorded){const pr=await recordPoint(pos,snapG||{t:S.t,m:S.m},lvG,false,'Dibatalkan darurat oleh operator','abort');toast(`Titik #${pr.id} dicatat · Dibatalkan darurat`,'bad')}
@@ -821,7 +823,7 @@ function renderPower(){
 }
 $('#pwr').onclick=()=>{
   if(R.on){
-    if(R.busy||R.dir||R.homing){toast('Gagal mematikan: robot sedang bergerak/homing/menjalankan siklus. Gunakan tombol BATALKAN INJEKSI DARURAT.','bad');return}
+    if(R.busy||R.dir||R.homing){toast('Gagal mematikan: robot sedang bergerak/homing/menjalankan siklus. Selesaikan/batalkan siklus dulu (saat injeksi: tombol BATALKAN INJEKSI DARURAT).','bad');return}
     R.on=false;toast('Robot dimatikan.');
   }else{R.on=true;toast('Robot dinyalakan.','ok');setTimeout(doHome,0)}
   renderPower();
