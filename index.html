@@ -146,6 +146,11 @@ kbd{font-family:var(--mono);font-size:10.5px;padding:1px 6px;border-radius:5px;b
 .estop{margin-top:14px;width:100%;padding:13px;border-radius:12px;background:linear-gradient(180deg,#ef5b5b,#d44444);color:#fff;font-weight:800;letter-spacing:.06em;display:flex;gap:9px;align-items:center;justify-content:center;box-shadow:0 8px 22px rgba(239,91,91,.22);transition:.15s}
 .estop:hover{filter:brightness(1.08)}
 .estop.reset{background:linear-gradient(180deg,#f0b232,#d99a1e);color:#2a1d00;box-shadow:0 8px 22px rgba(246,185,59,.2)}
+.estop:disabled{opacity:.4;cursor:not-allowed;filter:none}
+.pwr{margin-top:14px;width:100%;padding:13px;border-radius:12px;background:linear-gradient(180deg,var(--accent),var(--accent-d));color:#fff;font-weight:800;letter-spacing:.04em;display:flex;gap:9px;align-items:center;justify-content:center;box-shadow:0 8px 22px rgba(11,143,103,.22);transition:.15s}
+.pwr:hover{filter:brightness(1.07)}
+.pwr.off{background:var(--surface3);color:var(--muted);box-shadow:none}
+.dpad button:disabled{opacity:.4;cursor:not-allowed}
 
 /* sensors */
 .sensors{display:grid;gap:12px}
@@ -383,7 +388,8 @@ html.rm *{animation:none!important;transition:none!important}
               <div><small>Status Injektor</small><b id="injSt">Siap · Home</b></div>
               <div><small>Baterai</small><b id="bat">78% <span style="color:var(--muted);font-weight:500">(11.8 V)</span></b></div>
             </div>
-            <button class="estop" id="estop"><svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M8 2h8l6 6v8l-6 6H8l-6-6V8z"/></svg><span>BERHENTI DARURAT</span></button>
+            <button class="pwr" id="pwr"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v9"/><path d="M18.4 6.6a9 9 0 1 1-12.8 0"/></svg><span>ROBOT: ON — Matikan</span></button>
+            <button class="estop" id="estop"><svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M8 2h8l6 6v8l-6 6H8l-6-6V8z"/></svg><span>BATALKAN INJEKSI DARURAT</span></button>
           </div>
         </div>
 
@@ -619,8 +625,9 @@ $('#rng').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)
 
 /* ---------- robot ---------- */
 const STEP=.000045; // kecepatan tetap
-const R={lat:BASE.lat,lng:BASE.lng,bat:78,dir:null,busy:false,estop:false,reading:false};
+const R={lat:BASE.lat,lng:BASE.lng,bat:78,dir:null,busy:false,estop:false,reading:false,on:true};
 function setDir(d){
+  if(!R.on){if(d&&d!=='s')toast('Robot mati — nyalakan dulu dengan tombol Power.','bad');return}
   if(R.estop||R.busy){if(R.busy&&d&&d!=='s')toast('Robot sedang menjalankan siklus — kendali manual dikunci.');return}
   R.dir=(d==='s')?null:d;
   $$('#dpad button').forEach(b=>b.classList.toggle('press',b.dataset.d===R.dir));
@@ -644,8 +651,10 @@ function moveTick(){
   $('#bat').innerHTML=Math.round(R.bat)+'% <span style="color:var(--muted);font-weight:500">('+(9.6+R.bat/100*2.8).toFixed(1)+' V)</span>';
 }
 function updateRobotPill(){
+  $('#estop').hidden=!(R.on&&(R.busy||R.estop));   // hanya tampil saat siklus injeksi berjalan (atau menunggu reset)
   const p=$('#robotPill');
-  if(R.estop){p.className='pill red';p.innerHTML='<i></i>Darurat';}
+  if(!R.on){p.className='pill gray';p.innerHTML='<i></i>Robot Mati';}
+  else if(R.estop){p.className='pill red';p.innerHTML='<i></i>Darurat';}
   else if(R.busy){p.className='pill amber';p.innerHTML='<i></i>Menjalankan Siklus';}
   else if(R.dir){p.className='pill';p.innerHTML='<i></i>Bergerak';}
   else{p.className='pill';p.innerHTML='<i></i>Robot Siap';}
@@ -685,6 +694,12 @@ function renderLive(){
   const l1=layer1(S);
   // tombol mulai
   const sb=$('#startBtn');
+  if(!R.on){
+    sb.disabled=true;sb.classList.remove('bad');$('#startTxt').textContent='Robot mati';
+    $('#recBtns').hidden=true;
+    const k='off';if(k===lastLive)return;lastLive=k;
+    paintReco(null,'Robot dalam keadaan mati. Tekan tombol Power untuk menyalakan.',[],'MATI');return;
+  }
   if(!R.busy){
     sb.disabled=R.estop||!l1.ok;sb.classList.toggle('bad',!R.estop&&!l1.ok);
     $('#startTxt').textContent=R.estop?'Sistem dalam mode darurat':l1.ok?'Mulai Siklus di Titik Ini':'Titik tidak aman — pindahkan robot';
@@ -715,7 +730,7 @@ function animate(ms,fn){const t0=performance.now();return new Promise((res,rej)=
 function waitConfirm(){return new Promise(res=>{confirmResolve=res})}
 
 async function runCycle(){
-  if(R.busy||R.estop)return;
+  if(R.busy||R.estop||!R.on)return;
   if(!layer1(S).ok){toast('Titik tidak aman (Layer 1). Pindahkan robot.','bad');return}
   abort=false;setDir('s');R.busy=true;updateRobotPill();
   $('#startBtn').disabled=true;$('#startTxt').textContent='Siklus berjalan…';
@@ -772,13 +787,29 @@ async function runCycle(){
 $('#startBtn').onclick=runCycle;
 $('#okBtn').onclick=()=>{if(confirmResolve){confirmResolve(true);confirmResolve=null}};
 $('#noBtn').onclick=()=>{if(confirmResolve){confirmResolve(false);confirmResolve=null}else{abort=true}};
+function renderPower(){
+  const b=$('#pwr');b.classList.toggle('off',!R.on);
+  b.querySelector('span').textContent=R.on?'ROBOT: ON — Matikan':'ROBOT: OFF — Nyalakan';
+  $('#espDot').className='dot'+(R.on?'':' off');$('#espTxt').textContent=R.on?'ESP32 Terhubung':'Robot Mati';
+  $('#estop').disabled=!R.on;$$('#dpad button').forEach(x=>x.disabled=!R.on);
+  $('#injSt').textContent=R.on?(R.estop?'Berhenti':'Siap · Home'):'Mati';
+  updateRobotPill();lastLive='';renderLive();
+}
+$('#pwr').onclick=()=>{
+  if(R.on){
+    if(R.busy||R.dir){toast('Gagal mematikan: robot sedang bergerak/menjalankan siklus. Gunakan tombol BATALKAN INJEKSI DARURAT.','bad');return}
+    R.on=false;toast('Robot dimatikan.');
+  }else{R.on=true;toast('Robot dinyalakan.','ok')}
+  renderPower();
+};
 $('#estop').onclick=()=>{
+  if(!R.on)return;
   const b=$('#estop');
   if(!R.estop){R.estop=true;abort=true;R.dir=null;$$('#dpad button').forEach(x=>x.classList.remove('press'));
     if(confirmResolve){confirmResolve(false);confirmResolve=null}
     b.classList.add('reset');b.querySelector('span').textContent='RESET & AKTIFKAN KEMBALI';
     updateRobotPill();toast('Berhenti darurat aktif. Semua aktuator dihentikan.','bad');if(!R.busy)resetCycle();else renderLive();
-  }else{R.estop=false;abort=false;b.classList.remove('reset');b.querySelector('span').textContent='BERHENTI DARURAT';
+  }else{R.estop=false;abort=false;b.classList.remove('reset');b.querySelector('span').textContent='BATALKAN INJEKSI DARURAT';
     updateRobotPill();resetCycle();toast('Sistem siap kembali.','ok');}
 };
 
@@ -915,10 +946,10 @@ setInterval(updateFs,300);
 /* ---------- init ---------- */
 const f0=field(R.lat,R.lng);S.t=f0.t;S.m=f0.m;
 for(let i=0;i<HIST_LEN;i++){stepSensors();pushSeries()}
-buildSensors();buildCharts();renderSteps();syncPrefUI();applyCam();renderSensors();renderCharts();renderLive();
+updateRobotPill();buildSensors();buildCharts();renderSteps();syncPrefUI();applyCam();renderSensors();renderCharts();renderLive();
 selId=HIST.length?HIST[HIST.length-1].id:null;renderHist();renderMap();clock();
 setInterval(clock,1000);setInterval(wifi,6000);setInterval(moveTick,200);
-let tick=0;setInterval(()=>{if(R.dir)return; stepSensors();renderSensors();renderLive();if(++tick%6===0){pushSeries();renderCharts()}},500);
+let tick=0;setInterval(()=>{if(R.dir||!R.on)return; stepSensors();renderSensors();renderLive();if(++tick%6===0){pushSeries();renderCharts()}},500);
 setInterval(()=>{if(R.dir){pushSeries();renderCharts()}},1500);
 const sv=ls.get('orion_view','kontrol');if(sv!=='kontrol')go(sv);
 })();
